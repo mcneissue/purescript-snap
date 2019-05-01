@@ -9,4 +9,4 @@
 /.psa*
 /.spago
 /.cache
-/.bundle
+/bundle/bundle.js
