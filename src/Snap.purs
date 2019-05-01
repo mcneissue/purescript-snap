@@ -4,7 +4,7 @@ import Prelude
 
 import Component (Component(..))
 
-newtype Target m v = Target (m Unit -> v -> m Unit)
+newtype Target m v = Target (v -> m (Target m v))
 
 type Snapper m s u = { put :: u -> m Unit, get :: m s }
 
@@ -19,4 +19,5 @@ snap { put, get } (Component cmp) t = loop t
     loop (Target render) = do
         s <- get
         let v = cmp put s
-        render (loop t) v
+        t' <- render v
+        loop t'

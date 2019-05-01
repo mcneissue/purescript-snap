@@ -39,3 +39,5 @@ refocus lens = lens
 contraHoist :: forall m m' v s u. (m' ~> m) -> Component m v s u -> Component m' v s u
 contraHoist nat (Component cmp) = Component \u s -> cmp (nat <<< u) s
 
+contraHoistVoid :: forall m m' v s u. (forall a. m' a -> m Unit) -> Component m v s u -> Component m' v s u
+contraHoistVoid nat (Component cmp) = Component \u s -> cmp (nat <<< u) s

@@ -2,13 +2,16 @@ module Main where
 
 import Prelude
 
-import Component (Component(..), contraHoist, runComponent, refocus)
+import Component (Component(..), contraHoistVoid, refocus)
 import Data.Lens (lens)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Variant (SProxy(..), Variant, case_, inj, on)
 import Effect (Effect)
-import Effect.AVar (AVar)
-import Effect.AVar as AVar
+import Effect.Aff (launchAff_)
+import Effect.Aff.AVar (AVar)
+import Effect.Aff.AVar as AVar
+import Effect.Aff.Class (class MonadAff, liftAff)
+import Effect.Class (liftEffect)
 import Effect.Console (error)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
@@ -72,39 +75,35 @@ ecReducer s =  case_
   # on (SProxy :: SProxy "echoer")  (\a -> s { echoer = echoerReducer s.echoer a })
   # on (SProxy :: SProxy "counter") (\a -> s { counter = counterReducer s.counter a }) 
 
-adaptComponent :: forall n m s u v. Bind m => (s -> u -> m s) -> m s -> (s -> m Unit) -> (m ~> n) -> Component n v s u -> Component m v s u
-adaptComponent reducer get set nat component = Component adapted
-  where
-    adapted :: (u -> m Unit) -> s -> v
-    adapted update state = runComponent hoisted (\u -> (get >>= \s -> reducer s u >>= set) *> update u) state
-      where
-        hoisted = contraHoist nat component
-
-reactSnap :: forall s u. Component Effect R.JSX s u -> (s -> u -> Effect s) -> s -> Element -> Effect Unit
+reactSnap :: forall s u m. MonadAff m => Component Effect R.JSX s u -> (s -> u -> Effect s) -> s -> Element -> m Unit
 reactSnap component reducer initialState elm = do
-  av  <- AVar.empty
-  ref <- Ref.new initialState
-  let snapper    = reactSnapper av ref
-      component' = adaptComponent reducer (Ref.read ref) (flip Ref.write ref) identity component
-  snap snapper component' (reactTarget elm av)
+  av  <- liftAff $ AVar.empty
+  ref <- liftEffect $ Ref.new initialState
+  let snapper = refSnapper (\s u -> liftEffect $ reducer s u) ref av
+  liftAff $ snap snapper (contraHoistVoid launchAff_ component) (reactTarget elm av)
 
-reactSnapper :: forall s u. AVar Unit -> Ref s -> Snapper Effect s u
-reactSnapper av ref = 
-  { get: Ref.read ref
-  , put: const $ void $ AVar.put unit av $ const $ pure unit
-  }
-
-reactTarget :: Element -> AVar Unit -> Target Effect R.JSX
-reactTarget e av = Target go
+refSnapper :: forall s u m. MonadAff m => (s -> u -> m s) -> Ref s -> AVar Unit -> Snapper m s u
+refSnapper reducer ref sync = { get, put }
   where
-    go continue v = do
-      R.render v e
-      _ <- AVar.take av (const continue)
+    get = liftEffect $ Ref.read ref
+    put u = do
+      s  <- liftEffect $ Ref.read ref
+      s' <- reducer s u
+      liftEffect $ Ref.write s' ref
+      _ <- liftAff $ AVar.put unit sync
       pure unit
+
+reactTarget :: forall m. MonadAff m => Element -> AVar Unit -> Target m R.JSX
+reactTarget e sync = Target go
+  where
+    go v = do
+      liftEffect $ R.render v e
+      _ <- liftAff $ AVar.take sync
+      pure (Target go)
 
 main :: Effect Unit
 main = do
   container <- getElementById "container" =<< (map toNonElementParentNode $ document =<< window)
   case container of
-    Just e  -> reactSnap echoCounter (\s -> pure <<< ecReducer s) { counter: 0, echoer: "" } e
+    Just e  -> launchAff_ $ reactSnap echoCounter (\s -> pure <<< ecReducer s) { counter: 0, echoer: "" } e
     Nothing -> error "no"
