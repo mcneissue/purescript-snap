@@ -19,5 +19,4 @@ snap { put, get } (Component cmp) t = loop t
     loop (Target render) = do
         s <- get
         let v = cmp put s
-        _ <- render (loop t) v
-        pure unit
+        render (loop t) v
