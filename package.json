@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "bundle": "spago bundle --main Main --to bundle/bundle.js && parcel index.html"
+  },
+  "dependencies": {
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.3"
+  }
+}
