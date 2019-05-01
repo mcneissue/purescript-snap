@@ -2,12 +2,12 @@ module Main where
 
 import Prelude
 
-import Component (Component(..), contraHoistVoid, refocus)
+import Component (Component(..), contraHoistVoid, contraHoist, refocus)
 import Data.Lens (lens)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Variant (SProxy(..), Variant, case_, inj, on)
 import Effect (Effect)
-import Effect.Aff (launchAff_)
+import Effect.Aff (launchAff_, Aff)
 import Effect.Aff.AVar (AVar)
 import Effect.Aff.AVar as AVar
 import Effect.Aff.Class (class MonadAff, liftAff)
@@ -75,12 +75,19 @@ ecReducer s =  case_
   # on (SProxy :: SProxy "echoer")  (\a -> s { echoer = echoerReducer s.echoer a })
   # on (SProxy :: SProxy "counter") (\a -> s { counter = counterReducer s.counter a }) 
 
-reactSnap :: forall s u m. MonadAff m => Component Effect R.JSX s u -> (s -> u -> Effect s) -> s -> Element -> m Unit
-reactSnap component reducer initialState elm = do
+reactSnap :: forall s u m
+           . MonadAff m 
+          => (forall a. m a -> Effect Unit) 
+          -> Component Effect R.JSX s u 
+          -> (s -> u -> m s) 
+          -> s 
+          -> Element 
+          -> m Unit
+reactSnap nat component reducer initialState elm = do
   av  <- liftAff $ AVar.empty
   ref <- liftEffect $ Ref.new initialState
-  let snapper = refSnapper (\s u -> liftEffect $ reducer s u) ref av
-  liftAff $ snap snapper (contraHoistVoid launchAff_ component) (reactTarget elm av)
+  let snapper = refSnapper reducer ref av
+  snap snapper (contraHoistVoid nat component) (reactTarget elm av)
 
 refSnapper :: forall s u m. MonadAff m => (s -> u -> m s) -> Ref s -> AVar Unit -> Snapper m s u
 refSnapper reducer ref sync = { get, put }
@@ -105,5 +112,5 @@ main :: Effect Unit
 main = do
   container <- getElementById "container" =<< (map toNonElementParentNode $ document =<< window)
   case container of
-    Just e  -> launchAff_ $ reactSnap echoCounter (\s -> pure <<< ecReducer s) { counter: 0, echoer: "" } e
+    Just e  -> launchAff_ $ reactSnap launchAff_ echoCounter (\s -> pure <<< ecReducer s) { counter: 0, echoer: "" } e
     Nothing -> error "no"
