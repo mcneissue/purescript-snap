@@ -3,11 +3,13 @@ module Main where
 import Prelude
 
 import Component (Component(..), contraHoistVoid, contraHoist, refocus)
+import Control.Monad.Reader (class MonadReader, ask, asks, runReaderT)
+import Control.Monad.Reader (ReaderT)
 import Data.Lens (lens)
-import Data.Maybe (Maybe(..), maybe)
-import Data.Variant (SProxy(..), Variant, case_, inj, on)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Variant (SProxy(..), Variant, case_, expand, inj, on)
 import Effect (Effect)
-import Effect.Aff (launchAff_, Aff)
+import Effect.Aff (Aff, Milliseconds(..), delay, launchAff_, forkAff)
 import Effect.Aff.AVar (AVar)
 import Effect.Aff.AVar as AVar
 import Effect.Aff.Class (class MonadAff, liftAff)
@@ -75,6 +77,42 @@ ecReducer s =  case_
   # on (SProxy :: SProxy "echoer")  (\a -> s { echoer = echoerReducer s.echoer a })
   # on (SProxy :: SProxy "counter") (\a -> s { counter = counterReducer s.counter a }) 
 
+data Delay = Load (Delay -> Effect Unit) | Loaded String
+
+delayer :: Component Effect R.JSX (Maybe String) Delay
+delayer = Component \update s -> R.make component { render: render update, initialState: Nothing } { message: s }
+  where
+    render update self = R.div
+      { children:
+        [ R.button { children: [ R.text "Delayed Message" ], onClick: RE.capture_ $ update (Load update) }
+        , R.text $ fromMaybe "Loading..." self.props.message
+        ]
+      }
+    component :: R.Component { message :: Maybe String }
+    component = R.createComponent "Delayer"
+
+delayReducer :: forall r m. MonadReader { delayTime :: Number | r } m => MonadAff m => Maybe String -> Delay -> m (Maybe String)
+delayReducer _ (Load put) = do
+  t <- asks _.delayTime
+  _ <- liftAff $ forkAff $ delay (Milliseconds t) *> liftEffect (put $ Loaded "Done")
+  pure Nothing
+delayReducer _ (Loaded m) = pure $ Just m
+
+type RootState = { echoer :: String, counter :: Int, delayer :: Maybe String }
+type RootActions = Variant (echoer :: Echoer, counter :: Counter, delayer :: Delay)
+
+rootComponent :: Component Effect R.JSX RootState RootActions
+rootComponent = refocus eclens echoCounter <> refocus dlens delayer
+  where
+    eclens = lens (\{ counter, echoer } -> { counter, echoer }) (\_ -> expand)
+    dlens  = lens _.delayer (\_ -> inj (SProxy :: SProxy "delayer"))
+
+rootReducer :: forall r m. MonadReader { delayTime :: Number | r } m => MonadAff m => RootState -> RootActions -> m RootState
+rootReducer s = case_
+  # on (SProxy :: SProxy "counter") (\a -> pure $ s { counter = counterReducer s.counter a } )
+  # on (SProxy :: SProxy "echoer")  (\a -> pure $ s { echoer  = echoerReducer s.echoer a })
+  # on (SProxy :: SProxy "delayer") (\a -> (\x -> s { delayer = x}) <$> delayReducer s.delayer a )
+
 reactSnap :: forall s u m
            . MonadAff m 
           => (forall a. m a -> Effect Unit) 
@@ -108,9 +146,13 @@ reactTarget e sync = Target go
       _ <- liftAff $ AVar.take sync
       pure (Target go)
 
+runApp :: forall r a. { delayTime :: Number | r } -> ReaderT { delayTime :: Number | r } Aff a -> Effect Unit
+runApp r = launchAff_ <<< flip runReaderT r
+
 main :: Effect Unit
 main = do
   container <- getElementById "container" =<< (map toNonElementParentNode $ document =<< window)
+  let d = { delayTime : 1000.0 }
   case container of
-    Just e  -> launchAff_ $ reactSnap launchAff_ echoCounter (\s -> pure <<< ecReducer s) { counter: 0, echoer: "" } e
+    Just e  -> runApp d $ reactSnap (runApp d) rootComponent rootReducer { counter: 0, echoer: "", delayer: Just "Clicky the button" } e
     Nothing -> error "no"
