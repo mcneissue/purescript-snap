@@ -2,12 +2,11 @@ module Main where
 
 import Prelude
 
-import Component (Component(..), contraHoistVoid, contraHoist, refocus)
-import Control.Monad.Reader (class MonadReader, ask, asks, runReaderT)
-import Control.Monad.Reader (ReaderT)
+import Component (Component(..), contraHoistVoid, refocus)
+import Control.Monad.Reader (class MonadReader, ReaderT, asks, runReaderT)
 import Data.Lens (lens)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.Variant (SProxy(..), Variant, case_, expand, inj, on)
+import Data.Variant (SProxy(..), Variant, case_, default, inj, on)
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), delay, launchAff_, forkAff)
 import Effect.Aff.AVar (AVar)
@@ -64,31 +63,32 @@ echoer = Component \update s -> R.make component { render: render update, initia
 echoerReducer :: String -> Echoer -> String
 echoerReducer _ (Echo s) = s
 
-type EchoCounter = Variant (echoer :: Echoer, counter :: Counter)
+type EchoCounter r = Variant (echoer :: Echoer, counter :: Counter | r)
 
-echoCounter :: Component Effect R.JSX { echoer :: String, counter :: Int } EchoCounter
+echoCounter :: forall r a. Component Effect R.JSX { echoer :: String, counter :: Int | r } (EchoCounter a)
 echoCounter = refocus clens counter <> refocus elens echoer
   where
     clens = lens _.counter (\_ -> inj (SProxy :: SProxy "counter"))
     elens = lens _.echoer (\_ -> inj (SProxy :: SProxy "echoer"))
 
-ecReducer :: { echoer :: String, counter :: Int } -> EchoCounter -> { echoer :: String, counter :: Int }
-ecReducer s =  case_
+ecReducer :: forall r a. { echoer :: String, counter :: Int | r } -> EchoCounter a -> { echoer :: String, counter :: Int | r }
+ecReducer s =  default s
   # on (SProxy :: SProxy "echoer")  (\a -> s { echoer = echoerReducer s.echoer a })
-  # on (SProxy :: SProxy "counter") (\a -> s { counter = counterReducer s.counter a }) 
+  # on (SProxy :: SProxy "counter") (\a -> s { counter = counterReducer s.counter a })
 
 data Delay = Load (Delay -> Effect Unit) | Loaded String
+type DelayState r = { delayer :: Maybe String | r }
 
-delayer :: Component Effect R.JSX (Maybe String) Delay
+delayer :: forall r. Component Effect R.JSX (DelayState r) Delay
 delayer = Component \update s -> R.make component { render: render update, initialState: Nothing } { message: s }
   where
     render update self = R.div
       { children:
         [ R.button { children: [ R.text "Delayed Message" ], onClick: RE.capture_ $ update (Load update) }
-        , R.text $ fromMaybe "Loading..." self.props.message
+        , R.text $ fromMaybe "Loading..." self.props.message.delayer
         ]
       }
-    component :: R.Component { message :: Maybe String }
+    component :: forall z. R.Component { message :: DelayState z }
     component = R.createComponent "Delayer"
 
 delayReducer :: forall r m. MonadReader { delayTime :: Number | r } m => MonadAff m => Maybe String -> Delay -> m (Maybe String)
@@ -102,10 +102,9 @@ type RootState = { echoer :: String, counter :: Int, delayer :: Maybe String }
 type RootActions = Variant (echoer :: Echoer, counter :: Counter, delayer :: Delay)
 
 rootComponent :: Component Effect R.JSX RootState RootActions
-rootComponent = refocus eclens echoCounter <> refocus dlens delayer
+rootComponent = echoCounter <> refocus dlens delayer
   where
-    eclens = lens (\{ counter, echoer } -> { counter, echoer }) (\_ -> expand)
-    dlens  = lens _.delayer (\_ -> inj (SProxy :: SProxy "delayer"))
+    dlens  = lens identity (\_ -> inj (SProxy :: SProxy "delayer"))
 
 rootReducer :: forall r m. MonadReader { delayTime :: Number | r } m => MonadAff m => RootState -> RootActions -> m RootState
 rootReducer s = case_
