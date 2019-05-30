@@ -15,15 +15,14 @@ import Snap.Component (Component(..), Component', refocusAll)
 counter :: Component' Effect R.JSX Int
 counter = Component c
   where
-  c update s = R.makeStateless (R.createComponent "Counter") render unit
-    where
-    render _ = R.div
-      { children:
-        [ R.button { children: [ R.text "Increment" ], onClick: RE.capture_ $ update (s + 1) }
-        , R.text $ show s
-        , R.button { children: [ R.text "Decrement" ], onClick: RE.capture_ $ update (s - 1) }
-        ]
-      }
+  c update s =
+    R.div
+    { children:
+      [ R.button { children: [ R.text "Increment" ], onClick: RE.capture_ $ update (s + 1) }
+      , R.text $ show s
+      , R.button { children: [ R.text "Decrement" ], onClick: RE.capture_ $ update (s - 1) }
+      ]
+    }
 
 input :: Component' Effect R.JSX String
 input = Component c
