@@ -7,7 +7,7 @@ import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
 import Effect.Aff (delay, launchAff)
 import Effect.Aff.Class (liftAff)
-import React.Basic (Component, JSX, createComponent, keyed, make, makeStateless) as R
+import React.Basic (Component, JSX, createComponent, make) as R
 import React.Basic.DOM (button, div, text, input) as R
 import React.Basic.DOM.Events as RE
 import Snap.Component (Component(..), Component', refocusAll)
