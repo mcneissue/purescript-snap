@@ -8,7 +8,7 @@ import Data.Profunctor (class Profunctor)
 import Data.Profunctor.Choice (class Choice)
 import Data.Profunctor.Strong (class Strong)
 import Data.Symbol (class IsSymbol)
-import Data.Tuple (Tuple(..), fst, snd)
+import Data.Tuple (Tuple(..), curry, fst, snd, uncurry)
 import Heterogeneous.Folding (class HFoldl, hfoldl)
 import Heterogeneous.Mapping (class HMapWithIndex, class MappingWithIndex, hmapWithIndex)
 import Prim.Row (class Cons)
@@ -43,6 +43,7 @@ instance choiceComponent :: Monoid v => Choice (Component m v) where
   left (Component cmp) = Component \u -> either (cmp (u <<< Left)) (const mempty)
   right (Component cmp) = Component \u -> either (const mempty) (cmp (u <<< Right))
 
+-- TODO: Figure out whether we still need these
 bind :: forall m v v' s u. Component m v s u -> (v -> Component m v' s u) -> Component m v' s u
 bind (Component cmp) fn = Component \u s -> runComponent (fn $ cmp u s) u s
 
@@ -68,3 +69,26 @@ squash r = hfoldl ((<>) :: v -> v -> v) (mempty :: v) r
 
 handle :: forall m v s u. (u -> s -> m Unit) -> Component m v s u -> Component' m v s
 handle f (Component c) = Component \set s -> c (flip f s) s
+
+newtype MComponent s u m v = MComponent (Component m v s u)
+
+runMComponent :: forall m v s u. MComponent s u m v -> Component m v s u
+runMComponent (MComponent c) = c
+
+wrap :: forall s u m v. (Tuple (u -> m Unit) s -> v) -> MComponent s u m v
+wrap = MComponent <<< Component <<< curry
+
+unwrap :: forall s u m v. MComponent s u m v -> Tuple (u -> m Unit) s -> v
+unwrap = runMComponent >>> runComponent >>> uncurry
+
+instance functorMComponent :: Functor (MComponent s u m) where
+  map f c = wrap $ map f (unwrap c)
+
+instance applyMComponent :: Apply (MComponent s u m) where
+  apply fab fa = wrap $ (unwrap fab) <*> (unwrap fa)
+
+instance bindMComponent :: Bind (MComponent s u m) where
+  bind ma amb = wrap $ (unwrap ma) >>= (unwrap <<< amb)
+
+instance applicativeMComponent :: Applicative (MComponent s u m) where
+  pure x = wrap (\_ -> x) -- TODO: Work out why I can't write this as wrap $ pure x
