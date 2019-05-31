@@ -1,6 +1,8 @@
 {
   "scripts": {
-    "bundle": "spago bundle --main Main --to bundle/bundle.js && parcel index.html",
+    "bundle": "npm run spago && npm run parcel",
+    "spago": "spago bundle --main Main --to bundle/bundle.js",
+    "parcel": "parcel index.html",
     "pscid:build": "spago build"
   },
   "dependencies": {
