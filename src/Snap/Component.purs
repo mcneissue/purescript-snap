@@ -43,13 +43,6 @@ instance choiceComponent :: Monoid v => Choice (Component m v) where
   left (Component cmp) = Component \u -> either (cmp (u <<< Left)) (const mempty)
   right (Component cmp) = Component \u -> either (const mempty) (cmp (u <<< Right))
 
--- TODO: Figure out whether we still need these
-bind :: forall m v v' s u. Component m v s u -> (v -> Component m v' s u) -> Component m v' s u
-bind (Component cmp) fn = Component \u s -> runComponent (fn $ cmp u s) u s
-
-pure :: forall m v s u. v -> Component m v s u
-pure v = Component \_ _ -> v
-
 contraHoist :: forall m' m v s u. (m Unit -> m' Unit) -> Component m' v s u -> Component m v s u
 contraHoist nat (Component cmp) = Component \set s -> cmp (nat <<< set) s
 
