@@ -13,21 +13,19 @@ import React.Basic.DOM.Events as RE
 import Snap.Component (Component(..), Component', refocusAll)
 
 counter :: Component' Effect R.JSX Int
-counter = Component c
-  where
-  c update s =
-    R.div
-    { children:
-      [ R.button { children: [ R.text "Increment" ], onClick: RE.capture_ $ update (s + 1) }
-      , R.text $ show s
-      , R.button { children: [ R.text "Decrement" ], onClick: RE.capture_ $ update (s - 1) }
-      ]
-    }
+counter = Component \update s -> R.div
+  { children:
+    [ R.button { children: [ R.text "Increment" ], onClick: RE.capture_ $ update (s + 1) }
+    , R.text $ show s
+    , R.button { children: [ R.text "Decrement" ], onClick: RE.capture_ $ update (s - 1) }
+    ]
+  }
 
 input :: Component' Effect R.JSX String
-input = Component c
-  where
-  c update s = R.input { value: s, onChange: RE.capture RE.targetValue $ maybe (pure unit) update }
+input = Component \update s -> R.input
+  { value: s
+  , onChange: RE.capture RE.targetValue $ maybe (pure unit) update
+  }
 
 twoCountersAndAnInput :: Component' Effect R.JSX { counter1 :: Int, counter2 :: Int, input :: String }
 twoCountersAndAnInput = let r = refocusAll { counter1, counter2, input } in r.counter1 <> r.counter2 <> r.input
