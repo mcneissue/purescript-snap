@@ -8,9 +8,9 @@ import Effect (Effect)
 import Effect.Aff (delay, launchAff)
 import Effect.Aff.Class (liftAff)
 import React.Basic (Component, JSX, createComponent, make) as R
-import React.Basic.DOM (button, div, text, input) as R
+import React.Basic.DOM (button, div, img, input, text) as R
 import React.Basic.DOM.Events as RE
-import Snap.Component (Component(..), Component', refocusAll)
+import Snap.Component (Component(..), Component', MComponent(..), runMComponent)
 
 counter :: Component' Effect R.JSX Int
 counter = Component \update s -> R.div
@@ -27,11 +27,26 @@ input = Component \update s -> R.input
   , onChange: RE.capture RE.targetValue $ maybe (pure unit) update
   }
 
-twoCountersAndAnInput :: Component' Effect R.JSX { counter1 :: Int, counter2 :: Int, input :: String }
-twoCountersAndAnInput = let r = refocusAll { counter1, counter2, input } in r.counter1 <> r.counter2 <> r.input
-  where
-  counter1 = counter
-  counter2 = counter
+button :: forall s. Component Effect R.JSX s Unit
+button = Component \update _ -> R.button
+  { onClick: RE.capture_ $ update unit
+  }
+
+checkbox :: Component' Effect R.JSX Boolean
+checkbox = Component \update s -> R.input
+  { type: "checkbox"
+  , checked: s
+  , onChange: RE.capture_ $ update (not s)
+  }
+
+text :: forall m s u. Show s => Component m R.JSX s u
+text = Component \_ s -> R.text (show s)
+
+image :: forall m u. Component m R.JSX String u
+image = Component \_ s -> R.img { src: s }
+
+divved :: forall m s u. Component m R.JSX s u -> Component m R.JSX s u
+divved = MComponent >>> map (\x -> R.div { children: [x] }) >>> runMComponent
 
 type DelayState = Maybe String
 
