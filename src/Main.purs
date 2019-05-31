@@ -3,6 +3,7 @@ module Main where
 import Prelude
 
 import Data.Maybe (maybe)
+import Data.Profunctor (lcmap)
 import Effect (Effect)
 import Effect.Aff (error, launchAff_)
 import Effect.Aff.AVar as AVar
@@ -31,7 +32,7 @@ main = do
                 $  (squash <<< refocusAll) { counter1: counter }
                 <> (squash <<< refocusAll) { counter2: counter }
                 <> (squash <<< refocusAll) { input }
-                <> divved text
+                <> (lcmap show <<< divved $ text)
   e <- element
   ref <- liftEffect $ Ref.new s0
   launchAff_ $ do

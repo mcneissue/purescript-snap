@@ -39,8 +39,8 @@ checkbox = Component \update s -> R.input
   , onChange: RE.capture_ $ update (not s)
   }
 
-text :: forall m s u. Show s => Component m R.JSX s u
-text = Component \_ s -> R.text (show s)
+text :: forall m u. Component m R.JSX String u
+text = Component \_ s -> R.text s
 
 image :: forall m u. Component m R.JSX String u
 image = Component \_ s -> R.img { src: s }
