@@ -50,11 +50,8 @@ bind (Component cmp) fn = Component \u s -> runComponent (fn $ cmp u s) u s
 pure :: forall m v s u. v -> Component m v s u
 pure v = Component \_ _ -> v
 
-contraHoist :: forall m m' v s u. (m' ~> m) -> Component m v s u -> Component m' v s u
+contraHoist :: forall m' m v s u. (m Unit -> m' Unit) -> Component m' v s u -> Component m v s u
 contraHoist nat (Component cmp) = Component \set s -> cmp (nat <<< set) s
-
-contraHoistVoid :: forall m m' v s u. (forall a. m' a -> m Unit) -> Component m v s u -> Component m' v s u
-contraHoistVoid nat (Component cmp) = Component \set s -> cmp (nat <<< set) s
 
 data FocusProp = FocusProp
 
