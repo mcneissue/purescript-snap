@@ -46,20 +46,6 @@ instance choiceComponent :: Monoid v => Choice (Component m v) where
 contraHoist :: forall m' m v s u. (m Unit -> m' Unit) -> Component m' v s u -> Component m v s u
 contraHoist nat (Component cmp) = Component \set s -> cmp (nat <<< set) s
 
-data FocusProp = FocusProp
-
-instance focusProp :: (IsSymbol s, Strong p, Cons s a r r1, Cons s b r r2) => MappingWithIndex FocusProp (SProxy s) (p a b) (p { | r1 } { | r2 }) where
-  mappingWithIndex FocusProp s c = prop s c
-
-refocusAll :: forall a b. HMapWithIndex FocusProp a b => a -> b
-refocusAll = hmapWithIndex FocusProp
-
-squash :: forall r v. HFoldl (v -> v -> v) v { | r } v => Homogeneous r v => Monoid v => { | r } -> v
-squash r = hfoldl ((<>) :: v -> v -> v) (mempty :: v) r
-
-handle :: forall m v s u. (u -> s -> m Unit) -> Component m v s u -> Component' m v s
-handle f (Component c) = Component \set s -> c (flip f s) s
-
 newtype MComponent s u m v = MComponent (Component m v s u)
 
 runMComponent :: forall m v s u. MComponent s u m v -> Component m v s u
@@ -82,3 +68,24 @@ instance bindMComponent :: Bind (MComponent s u m) where
 
 instance applicativeMComponent :: Applicative (MComponent s u m) where
   pure x = wrap (\_ -> x) -- TODO: Work out why I can't write this as wrap $ pure x
+
+handle :: forall m v s u. (u -> s -> m Unit) -> Component m v s u -> Component' m v s
+handle f (Component c) = Component \set s -> c (flip f s) s
+
+data FocusProp = FocusProp
+
+instance focusProp :: (IsSymbol s, Strong p, Cons s a r r1, Cons s b r r2) => MappingWithIndex FocusProp (SProxy s) (p a b) (p { | r1 } { | r2 }) where
+  mappingWithIndex FocusProp s c = prop s c
+
+focus :: forall a r v. HMapWithIndex FocusProp a { | r } => HFoldl (v -> v -> v) v { | r } v => Homogeneous r v => Monoid v => a -> v
+focus = hmapWithIndex FocusProp >>> hfoldl ((<>) :: v -> v -> v) (mempty :: v)
+
+combine :: forall a r v.
+     HMapWithIndex FocusProp a { | r }
+  => HFoldl (v -> v -> v) v { | r } v
+  => Homogeneous r v
+  => Monoid v
+  => v -> a -> v
+combine a b = a <> focus b
+
+infixl 1 combine as :<>:
