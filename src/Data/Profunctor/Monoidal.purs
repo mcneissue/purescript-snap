@@ -280,5 +280,3 @@ pmt2lmt f = runLTraversal' $ f $ LTraversal' single
 -- A traversal optic for lists (see it in action in Main.purs)
 arrayTraversal :: forall a. PMonoTraversal (Array a) a
 arrayTraversal = lmt2pmt { contents: L.fromFoldable, fill: (const <<< L.toUnfoldable) }
-
--- Fuck, lol, except that it blows the stack. I screwed up something above, idk what.
