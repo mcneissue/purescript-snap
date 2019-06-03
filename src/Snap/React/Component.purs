@@ -2,14 +2,11 @@ module Snap.React.Component where
 
 import Prelude
 
-import Data.Array (updateAt)
-import Data.FoldableWithIndex (foldMapWithIndex)
-import Data.Maybe (Maybe(..), fromJust, fromMaybe, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
 import Effect.Aff (delay, launchAff)
 import Effect.Aff.Class (liftAff)
-import Partial.Unsafe (unsafePartial)
 import React.Basic (Component, JSX, createComponent, make) as R
 import React.Basic.DOM (button, div, img, input, text) as R
 import React.Basic.DOM.Events as RE

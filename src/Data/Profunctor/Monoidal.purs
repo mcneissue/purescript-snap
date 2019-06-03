@@ -2,7 +2,6 @@ module Data.Profunctor.Monoidal where
 
 import Prelude
 
-import Control.Lazy (class Lazy, defer)
 import Data.Bifoldable (bifoldMap) as B
 import Data.Bifunctor (bimap, lmap) as B
 import Data.Either (Either(..), either)
