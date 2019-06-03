@@ -39,6 +39,7 @@ class CosemigroupalMono p <= ComonoidalMono p where
 
 class (Cosemigroupal p, ComonoidalMono p) <= Comonoidal p
 
+
 -- Ok, so we want to show that "monomorphic" traversals are equivalent to profunctor
 -- optics with the MonoidalMono constraint. If we can show that, it proves that with
 -- a little bit of legwork, the stuff in the existing lens library can be generalized
@@ -73,17 +74,21 @@ class (Cosemigroupal p, ComonoidalMono p) <= Comonoidal p
 -- `MonoidalMono` and `WanderMono` is remains a mystery until we know what the relationship between
 -- `Monoidal` and `Wander` is.
 
+-- TODO: Move this somewhere else
+class Lazy2 p where
+  defer2 :: forall x y. (Unit -> p x y) -> p x y
+
 -- Concrete traversals (a substitute for the Haskell library version of concrete traversals)
 type LTraversal s t a b = { contents :: s -> L.List a, fill :: L.List b -> s -> t }
 
 -- Profunctor traversals
-type PTraversal s t a b = forall p. Monoidal p => p a b -> p s t
+type PTraversal s t a b = forall p. Monoidal p => Lazy2 p => p a b -> p s t -- We need the lazy because recursing in purescript is dumb
 
 -- Specialization of concrete traversals where t = s and b = a
 type LMonoTraversal s a = LTraversal s s a a
 
 -- Specialization of profunctor traversals where t = s and b = a
-type PMonoTraversal p s a = p a a -> p s s
+type PMonoTraversal s a = forall p. MonoidalMono p => Lazy2 p => p a a -> p s s -- Ditto re: lazy
 
 -- A good intuition for the concrete traversal presentation above is
 -- to note that it's isomorphic to a function `s -> FunList a b t`,
@@ -158,15 +163,12 @@ fl2lt f = { contents, fill }
 lt2pt :: forall s t a b. LTraversal s t a b -> PTraversal s t a b
 lt2pt { contents, fill } = rec >>> lcmap contents >>> first >>> dimap dup (uncurry fill)
   where
-  rec h = zip h (rec h) # rmap cons # left # dimap uncons merge
+  rec h = zip h (defer2 $ \_ -> rec h) # rmap cons # left # dimap uncons merge
   uncons L.Nil = Right L.Nil
   uncons (L.Cons a as) = Left (Tuple a as)
   cons = uncurry L.Cons
   dup a = Tuple a a
   merge = either identity identity
-
-class Lazy2 p where
-  defer2 :: forall x y. (Unit -> p x y) -> p x y
 
 -- And the forward direction for 2...
 --
@@ -179,7 +181,7 @@ class Lazy2 p where
 -- | There has *got* to be a way to do this less shittily, but for now copy paste works,
 -- | brain not work good at 4 AM
 --
-lmt2pmt :: forall p s a. MonoidalMono p => Lazy2 p => LMonoTraversal s a -> PMonoTraversal p s a
+lmt2pmt :: forall s a. LMonoTraversal s a -> PMonoTraversal s a
 lmt2pmt { contents, fill } = rec >>> lcmap contents >>> first >>> dimap dup (uncurry fill)
   where
   rec h = zipMono h (defer2 $ \_ -> rec h) # rmap cons # left # dimap uncons merge
@@ -199,6 +201,12 @@ newtype LTraversal' a b s t = LTraversal' (LTraversal s t a b)
 
 runLTraversal' :: forall s t a b. LTraversal' a b s t -> LTraversal s t a b
 runLTraversal' (LTraversal' l) = l
+
+instance lazy2Traversal' :: Lazy2 (LTraversal' a b) where
+  defer2 f = LTraversal' { contents, fill }
+    where
+    contents s = let l = runLTraversal' (f unit) in l.contents s
+    fill xs s = let l = runLTraversal' (f unit) in l.fill xs s
 
 -- Ok, here's all the instances, all the way from `Profunctor` to `Monoidal`
 instance profunctorTraversal :: Profunctor (LTraversal' a b) where
@@ -259,7 +267,7 @@ pt2lt f = runLTraversal' $ f $ LTraversal' single
   unsafeHead (L.Cons a _) = a
 
 -- Again we repeat all the bullshit to get the reverse direction for 2...
-pmt2lmt :: forall s a. (forall p. MonoidalMono p => PMonoTraversal p s a) -> LMonoTraversal s a
+pmt2lmt :: forall s a. PMonoTraversal s a -> LMonoTraversal s a
 pmt2lmt f = runLTraversal' $ f $ LTraversal' single
   where
   single = { contents: pure, fill: (const <<< unsafeHead) }
@@ -271,7 +279,7 @@ pmt2lmt f = runLTraversal' $ f $ LTraversal' single
 -- and apply it straight to a component!
 
 -- A traversal optic for lists (see it in action in Main.purs)
-arrayTraversal :: forall a p. MonoidalMono p => Lazy2 p => PMonoTraversal p (Array a) a
+arrayTraversal :: forall a. PMonoTraversal (Array a) a
 arrayTraversal = lmt2pmt { contents: L.fromFoldable, fill: (const <<< L.toUnfoldable) }
 
 -- Fuck, lol, except that it blows the stack. I screwed up something above, idk what.
