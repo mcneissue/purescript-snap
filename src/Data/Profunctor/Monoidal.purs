@@ -263,4 +263,11 @@ pmt2lmt f = runLTraversal' $ f $ LTraversal' single
   unsafeHead (L.Nil)      = unsafeThrow "List can't be empty!"
   unsafeHead (L.Cons a _) = a
 
--- Et voila!
+-- Et voila! Now we can write a little traversal in concrete form, transform it to a profunctor traversal,
+-- and apply it straight to a component!
+
+-- A traversal optic for lists (see it in action in Main.purs)
+arrayTraversal :: forall a. PMonoTraversal (Array a) a
+arrayTraversal = lmt2pmt { contents: L.fromFoldable, fill: (const <<< L.toUnfoldable) }
+
+-- Fuck, lol, except that it blows the stack. I screwed up something above, idk what.

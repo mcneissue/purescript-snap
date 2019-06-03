@@ -13,7 +13,8 @@ import Effect.Ref as Ref
 import Snap (snap)
 import Snap.Component (contraHoist, focus)
 import Snap.React (reactTarget, refSnapper)
-import Snap.React.Component (counter, input, text, divved, list) as S
+import Snap.React.Component (counter, input, text, divved) as S
+import Data.Profunctor.Monoidal (arrayTraversal)
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -34,7 +35,7 @@ main = do
                 <> focus { input: S.input }
                 <> focus { input: S.divved $ lcmap show $ S.text }
   let state = [s0, s0, s0]
-  let app = (S.divved <<< S.list) component <> (S.divved <<< lcmap show) S.text
+  let app = (S.divved <<< arrayTraversal) component <> (S.divved <<< lcmap show) S.text
   e <- element
   ref <- liftEffect $ Ref.new state
   launchAff_ $ do
