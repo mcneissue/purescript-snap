@@ -51,12 +51,6 @@ image = Component \_ s -> R.img { src: s }
 divved :: forall m s u. Component m R.JSX s u -> Component m R.JSX s u
 divved = MComponent >>> map (\x -> R.div { children: [x] }) >>> runMComponent
 
-unsafeFromJust :: forall a. Maybe a -> a
-unsafeFromJust x = unsafePartial (fromJust x)
-
-list :: forall m v s. Monoid v => Component' m v s -> Component' m v (Array s)
-list (Component cmp) = Component $ \set s -> foldMapWithIndex (\i -> cmp (\s' -> set (updateAt i s' s # unsafeFromJust))) s
-
 type DelayState = Maybe String
 
 delayer :: Component' Effect R.JSX DelayState
