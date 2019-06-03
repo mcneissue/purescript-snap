@@ -6,6 +6,7 @@ import Data.Either (Either(..), either)
 import Data.Lens.Record (prop)
 import Data.Profunctor (class Profunctor)
 import Data.Profunctor.Choice (class Choice)
+import Data.Profunctor.Monoidal (class Comonoidal, class ComonoidalMono, class Cosemigroupal, class CosemigroupalMono, class MonoidalMono, class SemigroupalMono, switch)
 import Data.Profunctor.Strong (class Strong)
 import Data.Symbol (class IsSymbol)
 import Data.Tuple (Tuple(..), curry, fst, snd, uncurry)
@@ -21,9 +22,6 @@ type Component' m v s = Component m v s s
 
 runComponent :: forall m v s u. Component m v s u -> ((u -> m Unit) -> s -> v)
 runComponent (Component cmp) = cmp
-
-switch :: forall m v a b c d. Component m v a b -> Component m v c d -> Component m v (Either a c) (Either b d)
-switch (Component f) (Component g) = Component \set -> either (f $ set <<< Left) (g $ set <<< Right)
 
 instance semigroupComponent :: Semigroup v => Semigroup (Component m v s u) where
   append (Component a) (Component b) = Component \u s -> a u s <> b u s
@@ -42,6 +40,24 @@ instance strongComponent :: Strong (Component m v) where
 instance choiceComponent :: Monoid v => Choice (Component m v) where
   left (Component cmp) = Component \u -> either (cmp (u <<< Left)) (const mempty)
   right (Component cmp) = Component \u -> either (const mempty) (cmp (u <<< Right))
+
+instance cosemigroupalMonoComponent :: CosemigroupalMono (Component m v) where
+  switchMono = switch
+
+instance cosemigroupalComponent :: Cosemigroupal (Component m v) where
+  switch (Component f) (Component g) = Component \set -> either (f $ set <<< Left) (g $ set <<< Right)
+
+instance comonoidalMonoComponent :: ComonoidalMono (Component m v) where
+  never = Component $ const absurd
+
+instance comonoidalComponent :: Comonoidal (Component m v)
+
+instance semigroupalMonoComponent :: Monoid v => SemigroupalMono (Component m v) where
+  zipMono (Component f) (Component g) = Component \set (Tuple a c) -> f (\b -> set $ Tuple b c) a <> g (\d -> set $ Tuple a d) c
+
+instance monoidalMonoComponent :: Monoid v => MonoidalMono (Component m v) where
+  infinite = Component \_ _ -> mempty
+
 
 contraHoist :: forall m' m v s u. (m Unit -> m' Unit) -> Component m' v s u -> Component m v s u
 contraHoist nat (Component cmp) = Component \set s -> cmp (nat <<< set) s
