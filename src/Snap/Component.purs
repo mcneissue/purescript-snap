@@ -6,7 +6,7 @@ import Data.Either (Either(..), either)
 import Data.Lens.Record (prop)
 import Data.Profunctor (class Profunctor)
 import Data.Profunctor.Choice (class Choice)
-import Data.Profunctor.Monoidal (class Comonoidal, class ComonoidalMono, class Cosemigroupal, class CosemigroupalMono, class MonoidalMono, class SemigroupalMono, switch)
+import Data.Profunctor.Monoidal (class Comonoidal, class ComonoidalMono, class Cosemigroupal, class CosemigroupalMono, class MonoidalMono, class SemigroupalMono, class Lazy2, switch)
 import Data.Profunctor.Strong (class Strong)
 import Data.Symbol (class IsSymbol)
 import Data.Tuple (Tuple(..), curry, fst, snd, uncurry)
@@ -22,6 +22,9 @@ type Component' m v s = Component m v s s
 
 runComponent :: forall m v s u. Component m v s u -> ((u -> m Unit) -> s -> v)
 runComponent (Component cmp) = cmp
+
+instance componentLazy :: Lazy2 (Component m v) where
+  defer2 f = Component $ \set s -> runComponent (f unit) set s
 
 instance semigroupComponent :: Semigroup v => Semigroup (Component m v s u) where
   append (Component a) (Component b) = Component \u s -> a u s <> b u s
