@@ -38,7 +38,6 @@ class CosemigroupalMono p <= ComonoidalMono p where
 
 class (Cosemigroupal p, ComonoidalMono p) <= Comonoidal p
 
-
 -- Ok, so we want to show that "monomorphic" traversals are equivalent to profunctor
 -- optics with the MonoidalMono constraint. If we can show that, it proves that with
 -- a little bit of legwork, the stuff in the existing lens library can be generalized
@@ -74,6 +73,7 @@ class (Cosemigroupal p, ComonoidalMono p) <= Comonoidal p
 -- `Monoidal` and `Wander` is.
 
 -- TODO: Move this somewhere else
+-- TODO: If we do end up using this, we need to actually do the memoization stuff Lazy does
 class Lazy2 p where
   defer2 :: forall x y. (Unit -> p x y) -> p x y
 
