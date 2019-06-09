@@ -3,6 +3,7 @@ module Snap.React.Component where
 import Prelude
 
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Profunctor (lcmap)
 import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
 import Effect.Aff (delay, launchAff)
@@ -47,6 +48,9 @@ image = Component \_ s -> R.img { src: s }
 
 divved :: forall m s u. Component m R.JSX s u -> Component m R.JSX s u
 divved = MComponent >>> map (\x -> R.div { children: [x] }) >>> runMComponent
+
+debug :: forall m s u. Show s => Component m R.JSX s u -> Component m R.JSX s u
+debug c = (divved c) <> (divved $ lcmap show $ text)
 
 type DelayState = Maybe String
 

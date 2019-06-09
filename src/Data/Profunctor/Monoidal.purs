@@ -2,6 +2,7 @@ module Data.Profunctor.Monoidal where
 
 import Prelude
 
+import Control.Monad.State (evalState, get, put)
 import Data.Bifoldable (bifoldMap) as B
 import Data.Bifunctor (bimap, lmap) as B
 import Data.Either (Either(..), either)
@@ -10,7 +11,8 @@ import Data.List as L
 import Data.Profunctor (class Profunctor, dimap, lcmap, rmap)
 import Data.Profunctor.Choice (class Choice)
 import Data.Profunctor.Strong (class Strong)
-import Data.Tuple (Tuple(..), swap, uncurry)
+import Data.Traversable (class Traversable, traverse)
+import Data.Tuple (Tuple(..), fst, swap, uncurry)
 import Effect.Exception.Unsafe (unsafeThrow)
 
 -- Profunctors that preserve the cartesian monoidal structure on Hask to various extents
@@ -255,28 +257,40 @@ instance monoidalMonoTraversal :: MonoidalMono (LTraversal' a b) where
 
 instance monoidalTraversal :: Monoidal (LTraversal' a b)
 
+-- We're going to be treating lists as sized vectors, going to have
+-- to do stuff like this
+unsafeUncons :: forall x. L.List x -> Tuple x (L.List x)
+unsafeUncons (L.Nil)       = unsafeThrow "List can't be empty!"
+unsafeUncons (L.Cons a as) = Tuple a as
+
+unsafeHead :: forall x. L.List x -> x
+unsafeHead = fst <<< unsafeUncons
+
 -- And finally, the reverse morphism for 1...
 pt2lt :: forall s t a b. PTraversal s t a b -> LTraversal s t a b
 pt2lt f = runLTraversal' $ f $ LTraversal' single
   where
   -- Ideally we'd have type information that witnesses `pure` produces a one element list but whatever
   single = { contents: pure, fill: (const <<< unsafeHead) }
-  unsafeHead :: forall x. L.List x -> x
-  unsafeHead (L.Nil)      = unsafeThrow "List can't be empty!"
-  unsafeHead (L.Cons a _) = a
 
 -- Again we repeat all the bullshit to get the reverse direction for 2...
 pmt2lmt :: forall s a. PMonoTraversal s a -> LMonoTraversal s a
 pmt2lmt f = runLTraversal' $ f $ LTraversal' single
   where
   single = { contents: pure, fill: (const <<< unsafeHead) }
-  unsafeHead :: forall x. L.List x -> x
-  unsafeHead (L.Nil)      = unsafeThrow "List can't be empty!"
-  unsafeHead (L.Cons a _) = a
 
 -- Et voila! Now we can write a little traversal in concrete form, transform it to a profunctor traversal,
 -- and apply it straight to a component!
 
--- A traversal optic for lists (see it in action in Main.purs)
-arrayTraversal :: forall a. PMonoTraversal (Array a) a
-arrayTraversal = lmt2pmt { contents: L.fromFoldable, fill: (const <<< L.toUnfoldable) }
+-- Fill a traversable using a list containing an equal number of elements
+-- Simply explodes if the lengths are mismatched
+fillTraversable :: forall t a b. Traversable t => L.List b -> t a -> t b
+fillTraversable l = flip evalState l <<< traverse (const step)
+  where
+  step = do
+    (Tuple x xs) <- unsafeUncons <$> get
+    put xs
+    pure x
+
+traversed :: forall t a. Traversable t => PMonoTraversal (t a) a
+traversed = lmt2pmt { contents: L.fromFoldable, fill: fillTraversable }
