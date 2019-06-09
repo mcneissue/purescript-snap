@@ -89,6 +89,14 @@ instance bindMComponent :: Bind (MComponent s u m) where
 instance applicativeMComponent :: Applicative (MComponent s u m) where
   pure = wrapMC <<< P.pure
 
+newtype CComponent m u s v = CComponent (Component m v s u)
+
+instance semigroupoidCComponent :: Semigroupoid (CComponent m u) where
+  compose (CComponent (Component bc)) (CComponent (Component ab)) = CComponent $ Component $ \set -> bc set <<< ab set
+
+instance categoryMComponent :: Category (CComponent m u) where
+  identity = CComponent <<< Component $ const identity
+
 handle :: forall m v s u. (u -> s -> m Unit) -> Component m v s u -> Component' m v s
 handle f (Component c) = Component \set s -> c (flip f s) s
 
