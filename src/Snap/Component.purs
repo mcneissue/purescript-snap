@@ -62,7 +62,6 @@ instance semigroupalMonoComponent :: Monoid v => SemigroupalMono (Component m v)
 instance monoidalMonoComponent :: Monoid v => MonoidalMono (Component m v) where
   infinite = Component \_ _ -> mempty
 
-
 contraHoist :: forall m' m v s u. (m Unit -> m' Unit) -> Component m' v s u -> Component m v s u
 contraHoist nat (Component cmp) = Component \set s -> cmp (nat <<< set) s
 
