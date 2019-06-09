@@ -1,6 +1,7 @@
 module Snap.Component where
 
 import Prelude
+import Prelude as P
 
 import Data.Either (Either(..), either)
 import Data.Lens.Record (prop)
@@ -70,23 +71,23 @@ newtype MComponent s u m v = MComponent (Component m v s u)
 runMComponent :: forall m v s u. MComponent s u m v -> Component m v s u
 runMComponent (MComponent c) = c
 
-wrap :: forall s u m v. (Tuple (u -> m Unit) s -> v) -> MComponent s u m v
-wrap = MComponent <<< Component <<< curry
+wrapMC :: forall s u m v. (Tuple (u -> m Unit) s -> v) -> MComponent s u m v
+wrapMC = MComponent <<< Component <<< curry
 
-unwrap :: forall s u m v. MComponent s u m v -> Tuple (u -> m Unit) s -> v
-unwrap = runMComponent >>> runComponent >>> uncurry
+unwrapMC :: forall s u m v. MComponent s u m v -> Tuple (u -> m Unit) s -> v
+unwrapMC = runMComponent >>> runComponent >>> uncurry
 
 instance functorMComponent :: Functor (MComponent s u m) where
-  map f c = wrap $ map f (unwrap c)
+  map f c = wrapMC $ map f (unwrapMC c)
 
 instance applyMComponent :: Apply (MComponent s u m) where
-  apply fab fa = wrap $ (unwrap fab) <*> (unwrap fa)
+  apply fab fa = wrapMC $ (unwrapMC fab) <*> (unwrapMC fa)
 
 instance bindMComponent :: Bind (MComponent s u m) where
-  bind ma amb = wrap $ (unwrap ma) >>= (unwrap <<< amb)
+  bind ma amb = wrapMC $ (unwrapMC ma) >>= (unwrapMC <<< amb)
 
 instance applicativeMComponent :: Applicative (MComponent s u m) where
-  pure x = wrap (\_ -> x) -- TODO: Work out why I can't write this as wrap $ pure x
+  pure = wrapMC <<< P.pure
 
 handle :: forall m v s u. (u -> s -> m Unit) -> Component m v s u -> Component' m v s
 handle f (Component c) = Component \set s -> c (flip f s) s
