@@ -6,7 +6,7 @@ import Control.Monad.State (evalState, get, put)
 import Data.Bifoldable (bifoldMap) as B
 import Data.Bifunctor (bimap, lmap) as B
 import Data.Either (Either(..), either)
-import Data.Lens (first, left)
+import Data.Lens (Lens, Lens', first, left, lens)
 import Data.List as L
 import Data.Profunctor (class Profunctor, dimap, lcmap, rmap)
 import Data.Profunctor.Choice (class Choice)
@@ -283,14 +283,25 @@ pmt2lmt f = runLTraversal' $ f $ LTraversal' single
 -- and apply it straight to a component!
 
 -- Fill a traversable using a list containing an equal number of elements
--- Simply explodes if the lengths are mismatched
-fillTraversable :: forall t a b. Traversable t => L.List b -> t a -> t b
-fillTraversable l = flip evalState l <<< traverse (const step)
+-- Simply ignores any extra elements, and doesn't replace if the list underflows
+fillTraversable :: forall t a. Traversable t => L.List a -> t a -> t a
+fillTraversable l = flip evalState l <<< traverse step
   where
-  step = do
-    (Tuple x xs) <- unsafeUncons <$> get
-    put xs
-    pure x
+  step v = do
+    xs <- get
+    case xs of
+      L.Nil        -> pure v
+      L.Cons x xs' -> x <$ put xs'
 
 traversed :: forall t a. Traversable t => PMonoTraversal (t a) a
 traversed = lmt2pmt { contents: L.fromFoldable, fill: fillTraversable }
+
+partsOf :: forall s t a. PTraversal s t a a -> Lens s t (L.List a) (L.List a)
+partsOf t = lens contents (flip fill)
+  where
+  { contents, fill } = pt2lt t
+
+partsOfMono :: forall s a. PMonoTraversal s a -> Lens' s (L.List a)
+partsOfMono t = lens contents (flip fill)
+  where
+  { contents, fill } = pmt2lmt t

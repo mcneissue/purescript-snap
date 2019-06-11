@@ -1,10 +1,10 @@
 module Snap.Component where
 
 import Prelude
-import Prelude as P
 
 import Data.Either (Either(..), either)
 import Data.Lens.Record (prop)
+import Data.Newtype (class Newtype)
 import Data.Profunctor (class Profunctor)
 import Data.Profunctor.Choice (class Choice)
 import Data.Profunctor.Monoidal (class Comonoidal, class ComonoidalMono, class Cosemigroupal, class CosemigroupalMono, class MonoidalMono, class SemigroupalMono, class Lazy2, switch)
@@ -13,11 +13,13 @@ import Data.Symbol (class IsSymbol)
 import Data.Tuple (Tuple(..), curry, fst, snd, uncurry)
 import Heterogeneous.Folding (class HFoldl, hfoldl)
 import Heterogeneous.Mapping (class HMapWithIndex, class MappingWithIndex, hmapWithIndex)
+import Prelude as P
 import Prim.Row (class Cons)
 import Type.Prelude (SProxy)
 import Type.Row.Homogeneous (class Homogeneous)
 
 newtype Component m v s u = Component ((u -> m Unit) -> s -> v)
+derive instance newtypeComponent :: Newtype (Component m v s u) _
 
 type Component' m v s = Component m v s s
 
@@ -66,6 +68,7 @@ contraHoist :: forall m' m v s u. (m Unit -> m' Unit) -> Component m' v s u -> C
 contraHoist nat (Component cmp) = Component \set s -> cmp (nat <<< set) s
 
 newtype MComponent s u m v = MComponent (Component m v s u)
+derive instance newtypeMComponent :: Newtype (MComponent s u m v) _
 
 runMComponent :: forall m v s u. MComponent s u m v -> Component m v s u
 runMComponent (MComponent c) = c
@@ -89,6 +92,7 @@ instance applicativeMComponent :: Applicative (MComponent s u m) where
   pure = wrapMC <<< P.pure
 
 newtype CComponent m u s v = CComponent (Component m v s u)
+derive instance newtypeCComponent :: Newtype (MComponent m u s v) _
 
 instance semigroupoidCComponent :: Semigroupoid (CComponent m u) where
   compose (CComponent (Component bc)) (CComponent (Component ab)) = CComponent $ Component $ \set -> bc set <<< ab set
@@ -96,8 +100,8 @@ instance semigroupoidCComponent :: Semigroupoid (CComponent m u) where
 instance categoryMComponent :: Category (CComponent m u) where
   identity = CComponent <<< Component $ const identity
 
-handle :: forall m v s u. (u -> s -> m Unit) -> Component m v s u -> Component' m v s
-handle f (Component c) = Component \set s -> c (flip f s) s
+handle :: forall m v s u. (u -> s -> s) -> Component m v s u -> Component' m v s
+handle f (Component c) = Component \set s -> c (flip f s >>> set) s
 
 data FocusProp = FocusProp
 

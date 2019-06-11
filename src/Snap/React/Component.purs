@@ -8,65 +8,67 @@ import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
 import Effect.Aff (delay, launchAff)
 import Effect.Aff.Class (liftAff)
-import React.Basic (Component, JSX, createComponent, make) as R
-import React.Basic.DOM (button, div, img, input, text) as R
-import React.Basic.DOM.Events as RE
+import React.Basic (Component, JSX, createComponent, make) as RB
+import React.Basic.DOM (button, div, div_, img, input, text) as RB
+import React.Basic.Events (handler_) as RB
 import Snap.Component (Component(..), Component', MComponent(..), runMComponent)
 
-counter :: Component' Effect R.JSX Int
-counter = Component \update s -> R.div
-  { children:
-    [ R.button { children: [ R.text "Increment" ], onClick: RE.capture_ $ update (s + 1) }
-    , R.text $ show s
-    , R.button { children: [ R.text "Decrement" ], onClick: RE.capture_ $ update (s - 1) }
-    ]
-  }
+button :: forall s. Component Effect (Array RB.JSX -> RB.JSX) s Unit
+button = Component
+  \set _ children -> RB.button { children, onClick: RB.handler_ $ set unit }
 
-input :: Component' Effect R.JSX String
-input = Component \update s -> R.input
-  { value: s
-  , onChange: RE.capture RE.targetValue $ maybe (pure unit) update
-  }
+counter :: Component' Effect RB.JSX Int
+counter = Component \set s -> RB.div_
+  [ RB.button { children: [ RB.text "Increment" ], onClick: RB.handler_ $ set (s + 1) }
+  , RB.text $ show s
+  , RB.button { children: [ RB.text "Decrement" ], onClick: RB.handler_ $ set (s - 1) }
+  ]
 
-button :: forall s. Component Effect R.JSX s Unit
-button = Component \update _ -> R.button
-  { onClick: RE.capture_ $ update unit
-  }
+type InputState = { focused :: Boolean, value :: String }
+foreign import focusedInputComponent :: (InputState -> Effect Unit) -> InputState -> RB.JSX
 
-checkbox :: Component' Effect R.JSX Boolean
-checkbox = Component \update s -> R.input
-  { type: "checkbox"
-  , checked: s
-  , onChange: RE.capture_ $ update (not s)
-  }
+input :: Component' Effect RB.JSX InputState
+input = Component focusedInputComponent
 
-text :: forall m u. Component m R.JSX String u
-text = Component \_ s -> R.text s
+checkbox :: Component' Effect RB.JSX Boolean
+checkbox = Component cmp
+  where
+  cmp set s = RB.input
+    { type: "checkbox"
+    , checked: s
+    , onChange: RB.handler_ $ set (not s)
+    }
 
-image :: forall m u. Component m R.JSX String u
-image = Component \_ s -> R.img { src: s }
+text :: forall m u. Component m RB.JSX String u
+text = Component \_ s -> RB.text s
 
-divved :: forall m s u. Component m R.JSX s u -> Component m R.JSX s u
-divved = MComponent >>> map (\x -> R.div { children: [x] }) >>> runMComponent
+image :: forall m u. Component m RB.JSX String u
+image = Component \_ s -> RB.img { src: s }
 
-debug :: forall m s u. Show s => Component m R.JSX s u -> Component m R.JSX s u
+divved :: forall m s u. Component m RB.JSX s u -> Component m RB.JSX s u
+divved = MComponent >>> map (\x -> RB.div { children: [x] }) >>> runMComponent
+
+conditional :: forall m u. Component m (RB.JSX -> RB.JSX) Boolean u
+conditional = Component \_ s -> if s then identity else const mempty
+
+debug :: forall m s u. Show s => Component m RB.JSX s u -> Component m RB.JSX s u
 debug c = (divved c) <> (divved $ lcmap show $ text)
 
 type DelayState = Maybe String
 
-delayer :: Component' Effect R.JSX DelayState
-delayer = Component \update s -> R.make component { render, initialState: s, didMount: didMount update } { message: s }
+delayer :: Component' Effect RB.JSX DelayState
+delayer = Component \set s -> RB.make component { render, initialState: s, didMount: didMount set } { message: s }
   where
-  didMount update self = maybe (wait *> update (Just "Ready!")) (const $ pure unit) $ self.props.message
+  didMount set self = maybe (wait *> set (Just "Ready!")) (const $ pure unit) $ self.props.message
 
   wait = launchAff $ liftAff $ delay (Milliseconds 5.0)
 
-  render self = R.div
+  render self = RB.div
     { children:
-      [ R.button { children: [ R.text "Delayed Message" ] }
-      , R.text $ fromMaybe "Loading..." self.props.message
+      [ RB.button { children: [ RB.text "Delayed Message" ] }
+      , RB.text $ fromMaybe "Loading..." self.props.message
       ]
     }
 
-  component :: R.Component { message :: DelayState }
-  component = R.createComponent "Delayer"
+  component :: RB.Component { message :: DelayState }
+  component = RB.createComponent "Delayer"
