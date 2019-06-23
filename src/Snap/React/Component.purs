@@ -1,74 +1,86 @@
 module Snap.React.Component where
 
-import Prelude
-
-import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Profunctor (lcmap)
-import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
-import Effect.Aff (delay, launchAff)
-import Effect.Aff.Class (liftAff)
-import React.Basic (Component, JSX, createComponent, make) as RB
-import React.Basic.DOM (button, div, div_, img, input, text) as RB
-import React.Basic.Events (handler_) as RB
-import Snap.Component (Component(..), Component', MComponent(..), runMComponent)
+import Effect.Aff.Compat (EffectFn1)
+import Prelude (identity, (<<<), not, (+), (-), const, ($), mempty, class Show, show, Unit, unit)
+import Prim.Row (class Union)
+import React.Basic (JSX) as R
+import React.Basic.DOM (Props_button, Props_input, Props_img)
+import React.Basic.DOM (button, div, img, input, text) as R
+import React.Basic.DOM.Internal (SharedProps)
+import React.Basic.Events (SyntheticEvent)
+import React.Basic.Events (handler_) as R
+import Record.Builder (build, union)
+import Snap.SYTC.Component (Cmp, Cmp', apply, handle, map, pure)
+import Snap.SYTC.Component (lcmap) as C
 
-button :: forall s. Component Effect (Array RB.JSX -> RB.JSX) s Unit
-button = Component
-  \set _ children -> RB.button { children, onClick: RB.handler_ $ set unit }
+-- Some convenience things
+unionPropsWith :: forall p q r. Union p q r => Record q -> Record p -> Record r
+unionPropsWith = (build <<< union)
 
-counter :: Component' Effect RB.JSX Int
-counter = Component \set s -> RB.div_
-  [ RB.button { children: [ RB.text "Increment" ], onClick: RB.handler_ $ set (s + 1) }
-  , RB.text $ show s
-  , RB.button { children: [ RB.text "Decrement" ], onClick: RB.handler_ $ set (s - 1) }
-  ]
+setChildren :: forall x. ({ children :: Array R.JSX } -> x) -> Array R.JSX -> x
+setChildren f cs = f { children: cs }
 
-type InputState = { focused :: Boolean, value :: String }
-foreign import focusedInputComponent :: (InputState -> Effect Unit) -> InputState -> RB.JSX
+infixl 3 setChildren as |<
 
-input :: Component' Effect RB.JSX InputState
-input = Component focusedInputComponent
-
-checkbox :: Component' Effect RB.JSX Boolean
-checkbox = Component cmp
+button ::
+  forall s x y z.
+  Union y z (SharedProps Props_button) =>
+  Union x ( onClick :: EffectFn1 SyntheticEvent Unit ) y =>
+  Cmp Effect (Record x -> R.JSX) s Unit
+button set _ =
+  R.button
+    <<< unionPropsWith { onClick }
   where
-  cmp set s = RB.input
-    { type: "checkbox"
-    , checked: s
-    , onChange: RB.handler_ $ set (not s)
-    }
+  onClick = R.handler_ $ set unit
 
-text :: forall m u. Component m RB.JSX String u
-text = Component \_ s -> RB.text s
+counter :: Cmp' Effect R.JSX Int
+counter = ado
+  inc <- handle (const (_ + 1)) button
+  dec <- handle (const (_ - 1)) button
+  txt <- C.lcmap show text
+  in
+  R.div |<
+    [ inc |< [ R.text "+" ]
+    , txt
+    , dec |< [ R.text "-" ]
+    ]
 
-image :: forall m u. Component m RB.JSX String u
-image = Component \_ s -> RB.img { src: s }
+type InputState
+  = { focused :: Boolean, value :: String }
 
-divved :: forall m s u. Component m RB.JSX s u -> Component m RB.JSX s u
-divved = MComponent >>> map (\x -> RB.div { children: [x] }) >>> runMComponent
+foreign import focusedInputComponent :: (InputState -> Effect Unit) -> InputState -> R.JSX
 
-conditional :: forall m u. Component m (RB.JSX -> RB.JSX) Boolean u
-conditional = Component \_ s -> if s then identity else const mempty
+input :: Cmp' Effect R.JSX InputState
+input = focusedInputComponent
 
-debug :: forall m s u. Show s => Component m RB.JSX s u -> Component m RB.JSX s u
-debug c = (divved c) <> (divved $ lcmap show $ text)
+checkbox ::
+  forall x y z.
+  Union y z (SharedProps Props_input) =>
+  Union x ( checked :: Boolean, onChange :: EffectFn1 SyntheticEvent Unit, type :: String ) y =>
+  Cmp' Effect ({ | x } -> R.JSX) Boolean
+checkbox set s =
+  R.input
+    <<< unionPropsWith
+        { type: "checkbox"
+        , checked: s
+        , onChange: R.handler_ $ set (not s)
+        }
 
-type DelayState = Maybe String
+text :: forall m u. Cmp m R.JSX String u
+text _ = R.text
 
-delayer :: Component' Effect RB.JSX DelayState
-delayer = Component \set s -> RB.make component { render, initialState: s, didMount: didMount set } { message: s }
+img ::
+  forall u x y z.
+  Union y z (SharedProps Props_img) =>
+  Union x ( src :: String ) y =>
+  Cmp Effect ({ | x } -> R.JSX) String u
+img _ s = R.img <<< unionPropsWith { src: s }
+
+conditional :: forall m u. Cmp m (R.JSX -> R.JSX) Boolean u
+conditional _ = bool identity (const mempty)
   where
-  didMount set self = maybe (wait *> set (Just "Ready!")) (const $ pure unit) $ self.props.message
+  bool x y b = if b then x else y
 
-  wait = launchAff $ liftAff $ delay (Milliseconds 5.0)
-
-  render self = RB.div
-    { children:
-      [ RB.button { children: [ RB.text "Delayed Message" ] }
-      , RB.text $ fromMaybe "Loading..." self.props.message
-      ]
-    }
-
-  component :: RB.Component { message :: DelayState }
-  component = RB.createComponent "Delayer"
+debug :: forall m s u. Show s => Cmp m R.JSX s u
+debug = C.lcmap show text

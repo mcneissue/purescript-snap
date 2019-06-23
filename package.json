@@ -10,6 +10,7 @@
     "react-dom": "^16.8.6"
   },
   "devDependencies": {
-    "parcel-bundler": "^1.12.3"
+    "parcel-bundler": "^1.12.3",
+    "purty": "^4.1.1"
   }
 }
