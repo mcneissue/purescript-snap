@@ -20,7 +20,12 @@ import Snap.SYTC.Component (Cmp', apply, map, switch, (<$>!))
 σ = SProxy
 
 -- The state corresponding to a todo item
-type Todo = { done :: Boolean, hovered :: Boolean, editing :: Boolean, value :: String }
+type Todo =
+  { done :: Boolean
+  , hovered :: Boolean
+  , editing :: Boolean
+  , value :: String
+  }
 
 -- The editor for todo items
 editor :: Cmp' Effect JSX Todo
