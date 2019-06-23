@@ -8,6 +8,7 @@ import Data.Foldable (and)
 import Data.Functor.Variant (SProxy(..))
 import Data.Lens (Lens', Optic', lens)
 import Data.Lens.Record (prop)
+import Data.Lens.Record.Extra (extracted, remapped)
 import Data.Maybe (maybe)
 import Data.Newtype (wrap)
 import Data.Profunctor (class Profunctor, dimap, lcmap)
@@ -37,11 +38,12 @@ import Web.HTML.Window (document)
 
 type Todo = { done :: Boolean, hovered :: Boolean, editing :: Boolean, value :: String }
 
--- TODO: Factor this into a magic heterogeneous record thing that looks like `magic { focused: "editing", value: "value" }`
 todoEditor :: Component' Effect JSX Todo
-todoEditor = l S.input
+todoEditor = (extracted scheme <<< remapped scheme) S.input
   where
-  l = lens (\r -> { focused: r.editing, value: r.value }) (\s v -> s { editing = v.focused, value = v.value })
+  scheme = { editing: focused, value }
+  focused = SProxy :: _ "focused"
+  value = SProxy :: _ "value"
 
 todoViewer :: Component Effect JSX Todo Todo
 todoViewer = runMComponent $ ado

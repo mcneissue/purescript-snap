@@ -116,6 +116,15 @@ let upstream =
 
 let overrides = {=}
 
-let additions = {=}
+let additions =
+      { record-optics-extra =
+          let manifest =
+                https://raw.githubusercontent.com/masaeedu/purescript-record-optics-extra/master/spago.dhall sha256:cbffbd747560d338124c5d41e2df6e9efcffce1cfef787474ffddfa78b1ca3b8
+
+          in  mkPackage
+              manifest.dependencies
+              "https://github.com/masaeedu/purescript-record-optics-extra.git"
+              "master"
+      }
 
 in  upstream // overrides // additions
