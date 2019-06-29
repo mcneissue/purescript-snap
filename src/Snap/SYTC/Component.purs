@@ -88,7 +88,7 @@ infixl 4 map as <$>!
 mapFlipped :: forall m u s a b. Cmp m a s u -> (a -> b) -> Cmp m b s u
 mapFlipped = flip map
 
-infixr 4 mapFlipped as <&>!
+infixr 4 mapFlipped as <#>!
 
 apply :: forall m u s a b. Cmp m (a -> b) s u -> Cmp m a s u -> Cmp m b s u
 apply = lift2 ($)
