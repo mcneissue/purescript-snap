@@ -87,12 +87,12 @@ instance monoidalMonoComponent :: Monoid v => MonoidalMono (PComponent m v) wher
 focus :: forall m v s u x y. Newtype x y => (PComponent m v s u -> x) -> Cmp m v s u -> y
 focus = under ρ
 
-infixl 8 focus as $!
+infixl 1 focus as $!
 
 flippedFocus :: forall m v s u x y. Newtype x y => Cmp m v s u -> (PComponent m v s u -> x) -> y
 flippedFocus = flip focus
 
-infixr 8 flippedFocus as #!
+infixl 1 flippedFocus as #!
 
 -- Monad wrapper
 newtype MComponent s u m v

@@ -2,7 +2,6 @@ module Main where
 
 import Prelude
 
-import Data.Array (replicate)
 import Data.Maybe (maybe)
 import Effect (Effect)
 import Effect.Aff (error, launchAff_)
@@ -13,22 +12,12 @@ import Effect.Ref as Ref
 import Snap (snap)
 import Snap.React (reactTarget, refSnapper)
 import Snap.SYTC.Component (contraHoist)
-import TodoMVC (App, app)
+import TodoMVC (app, initialState)
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (toNonElementParentNode)
 import Web.HTML.Window (document)
-
--- Initial application state consists of three components
-state :: App
-state = replicate 3 s
-  where
-  s = { done: true
-      , hovered: false
-      , editing: false
-      , value: "Test value pls ignore"
-      }
 
 -- Finding the DOM element we're going to render everything onto
 element :: Effect Element
@@ -40,7 +29,7 @@ main :: Effect Unit
 main = do
   -- Find the DOM element and create an Ref to hold the application state
   e <- element
-  ref <- liftEffect $ Ref.new state
+  ref <- liftEffect $ Ref.new initialState
   launchAff_ $ do
     av  <- AVar.empty
     -- Create the state manager and target from the resources above

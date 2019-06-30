@@ -3,11 +3,14 @@ module Data.Profunctor.Optics where
 import Prelude
 
 import Control.Monad.State (evalState, get, put)
+import Data.Array (zipWith)
 import Data.Bifoldable (bifoldMap)
 import Data.Bifunctor (bimap, lmap) as B
 import Data.Either (Either(..), either)
-import Data.Foldable (class Foldable, and)
-import Data.Lens (Lens, Lens', Optic', first, left, lens)
+import Data.Filterable (class Filterable, filter)
+import Data.Foldable (class Foldable, and, length)
+import Data.Lens (Lens, Lens', Optic', first, left, lens, set, view)
+import Data.List (List(..), catMaybes)
 import Data.List as L
 import Data.Maybe (Maybe(..))
 import Data.Profunctor (class Profunctor, dimap, lcmap, rmap)
@@ -248,13 +251,21 @@ pt2lt :: forall s t a b. PTraversal s t a b -> LTraversal s t a b
 pt2lt f = runLTraversal' $ f $ LTraversal' single
   where
   -- Ideally we'd have type information that witnesses `pure` produces a one element list but whatever
-  single = { contents: pure, fill: (const <<< unsafeHead) }
+  single =
+    { contents: pure
+    , fill: const <<< unsafeHead
+    }
 
 -- Again we repeat all the bullshit to get the reverse direction for 2...
 pmt2lmt :: forall s a. PMonoTraversal s a -> LMonoTraversal s a
 pmt2lmt f = runLTraversal' $ f $ LTraversal' single
   where
-  single = { contents: pure, fill: (const <<< unsafeHead) }
+  single =
+    { contents: pure
+    , fill: case _ of
+            Nil -> identity
+            Cons x _ -> const x
+    }
 
 -- Et voila! Now we can write a little traversal in concrete form, transform it to a profunctor traversal,
 -- and apply it straight to a component!
@@ -294,15 +305,15 @@ overwriteWitherable l = flip evalState l <<< wither step
       L.Nil        -> pure Nothing
       L.Cons x xs' -> Just x <$ put xs'
 
-withered :: forall t a b. Witherable t => PTraversal (t a) (t b) a b
-withered = lt2pt
+iterated :: forall t a b. Witherable t => PTraversal (t a) (t b) a b
+iterated = lt2pt
   { contents: L.fromFoldable
   , fill: overwriteWitherable
   }
 
 
-withered' :: forall t a. Witherable t => PMonoTraversal (t a) a
-withered' = lmt2pmt
+iterated' :: forall t a. Witherable t => PMonoTraversal (t a) a
+iterated' = lmt2pmt
   { contents: L.fromFoldable
   , fill: overwriteWitherable
   }
@@ -317,8 +328,28 @@ partsOf' t = lens contents (flip fill)
   where
   { contents, fill } = pmt2lmt t
 
+withered :: forall t a b. Witherable t => PTraversal (t a) (t b) a (Maybe b)
+withered = lt2pt { contents, fill }
+  where
+  contents = L.fromFoldable
+  fill = catMaybes >>> overwriteWitherable
+
+withered' :: forall t a. Witherable t => PMonoTraversal (t a) (Maybe a)
+withered' = lmt2pmt { contents, fill }
+  where
+  contents = L.fromFoldable <<< map Just
+  fill = catMaybes >>> overwriteWitherable
+
 by :: forall p a. Profunctor p => (a -> Boolean) -> Optic' p a (Either a a)
 by f = dimap (\v -> if f v then Left v else Right v) (either identity identity)
 
 all :: forall t a. Functor t => Foldable t => HeytingAlgebra a => Eq a => Lens' (t a) a
 all = lens and (\s b -> if and s == b then s else b <$ s)
+
+overArray :: forall s t a b. Lens s t a b -> Lens (Array s) (Array t) (Array a) (Array b)
+overArray l = lens (map $ view l) (zipWith $ flip (set l))
+
+type Getter s a = forall p x. Profunctor p => p a x -> p s x
+
+countBy :: forall f x. Filterable f => Foldable f => (x -> Boolean) -> Getter (f x) Int
+countBy p = lcmap (filter p >>> length)

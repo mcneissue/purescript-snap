@@ -103,6 +103,8 @@ lift2 f c1 c2 = un Compose $ A.lift2 f (Compose c1) (Compose c2)
 bind :: forall m s u a b. Cmp m a s u -> (a -> Cmp m b s u) -> Cmp m b s u
 bind c f = curry $ (uncurry c) >>= (f >>> uncurry)
 
+infixl 1 bind as >>=!
+
 identity :: forall m s u c x. Category c => Cmp m (c x x) s u
 identity = pure P.identity
 
@@ -118,3 +120,6 @@ infixr 9 composeFlipped as >>>!
 
 handle :: forall m v s u. (u -> s -> s) -> Cmp m v s u -> Cmp' m v s
 handle f c set s = c (flip f s >>> set) s
+
+handle_ :: forall m v s u. (s -> s) -> Cmp m v s u -> Cmp' m v s
+handle_ f c set s = c ((const $ f s) >>> set) s
