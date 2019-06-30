@@ -18,7 +18,7 @@ import React.Basic (JSX)
 import React.Basic.DOM as R
 import React.Basic.Events (handler_) as R
 import Snap.Component (($!), (#!))
-import Snap.React.Component (InputState, (|-), (|<), (|=))
+import Snap.React.Component (InputState, (|-), (|<), (|=), (|~))
 import Snap.React.Component as S
 import Snap.SYTC.Component (Cmp, Cmp', (<#>!), (<$>!), (>>=!))
 import Snap.SYTC.Component as C
@@ -53,6 +53,11 @@ instance showFilter :: Show Filter where
   show Active = "Active"
   show Completed = "Completed"
 
+shouldHide :: Filter -> Todo -> Boolean
+shouldHide All       = const false
+shouldHide Active    = _.done
+shouldHide Completed = not _.done
+
 type App =
   { newTodo :: InputState
   , todos :: Todos
@@ -83,10 +88,10 @@ initialState = { newTodo: defaultNewTodo, todos: [], filter: All }
 editor :: Cmp' Effect JSX Todo
 editor = subpart $! C.ado
   kp    <- S.keypressability
-           # C.handle keyHandler
+           #  C.handle keyHandler
            #! prop _focused
   input <- S.input
-  in kp input { className: "edit" }
+  in input |~ kp $ { className: "edit" }
   where
   subpart = extractedBy scheme <<< remappedBy scheme
   scheme = { editing: _focused, value: _value }
@@ -104,10 +109,11 @@ viewer = C.ado
   hvbl <- S.hoverability #! prop _hovered
   in
   \extra ->
-    hvbl R.div
+    R.div
+    |~ hvbl
     |= { className: "view" }
     |< [ chk { className: "toggle" }
-       , ckbl R.label |- txt
+       , R.label |~ ckbl |- txt
        , veil extra
        ]
 
@@ -122,11 +128,6 @@ todo = C.ado
   where
   editor' = const <$>! editor
   editview = C.switch editor' viewer #! by _.editing
-
-shouldHide :: Filter -> Todo -> Boolean
-shouldHide All       = const false
-shouldHide Active    = _.done
-shouldHide Completed = not _.done
 
 listItem :: forall u u'. Cmp Effect (JSX -> Cmp Effect JSX (Maybe Todo) u') Filter u
 listItem _ f v _ Nothing  = mempty
@@ -166,7 +167,7 @@ header = C.ado
   in R.header
      |= { className: "header" }
      |< [ R.h1 |- R.text "todos"
-        , key inp { className: "new-todo", placeholder: "What needs to be done?" }
+        , inp |~ key $ { className: "new-todo", placeholder: "What needs to be done?" }
         ]
   where
   addTodo s =
@@ -202,9 +203,9 @@ filters = C.ado
   com <- S.clickability # C.handle_ (const Completed)
   in R.ul
      |= { className: "filters" }
-     |< [ all R.li |- a All
-        , act R.li |- a Active
-        , com R.li |- a Completed
+     |< [ R.li |~ all |- a All
+        , R.li |~ act |- a Active
+        , R.li |~ com |- a Completed
         ]
 
 footer :: Cmp' Effect JSX App
