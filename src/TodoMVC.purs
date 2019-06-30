@@ -2,27 +2,23 @@ module TodoMVC where
 
 import Prelude hiding (map,apply)
 
-import Data.Array (filter, length, replicate, snoc)
-import Data.Eq (class Eq)
+import Data.Array (snoc)
 import Data.Functor.Variant (SProxy(..))
-import Data.Lens (Lens', _Just)
+import Data.Lens (_Just)
 import Data.Lens.Record (prop)
 import Data.Lens.Record.Extra (extractedBy, remappedBy)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..))
 import Data.Profunctor (lcmap)
 import Data.Profunctor.Optics (all, by, partsOf', traversed', withered', overArray, countBy)
 import Data.String (trim)
-import Debug.Trace (spy)
 import Effect (Effect)
 import React.Basic (JSX)
-import React.Basic.DOM as R
-import React.Basic.Events (handler_) as R
+import React.Basic.DOM (a, div, footer, h1, header, label, li, section, span, strong, text, ul) as R
 import Snap.Component (($!), (#!))
 import Snap.React.Component (InputState, (|-), (|<), (|=), (|~))
 import Snap.React.Component as S
-import Snap.SYTC.Component (Cmp, Cmp', (<#>!), (<$>!), (>>=!))
+import Snap.SYTC.Component (Cmp, Cmp', (<$>!), (>>=!))
 import Snap.SYTC.Component as C
-import Unsafe.Coerce (unsafeCoerce)
 
 _done    = SProxy :: _ "done"
 _hovered = SProxy :: _ "hovered"
