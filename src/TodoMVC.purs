@@ -90,8 +90,8 @@ editor = subpart $! C.ado
   kp    <- S.keypressability
            #  C.handle keyHandler
            #! prop _focused
-  input <- S.input
-  in input |~ kp $ { className: "edit" }
+  txt <- S.input
+  in txt |~ kp $ { className: "edit" }
   where
   subpart = extractedBy scheme <<< remappedBy scheme
   scheme = { editing: _focused, value: _value }
