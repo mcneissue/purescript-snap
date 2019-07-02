@@ -17,7 +17,7 @@ import React.Basic.DOM (a, div, footer, h1, header, label, li, section, span, st
 import Snap.Component (($!), (#!))
 import Snap.React.Component (InputState, (|-), (|<), (|=), (|~))
 import Snap.React.Component as S
-import Snap.SYTC.Component (Cmp, Cmp', (<$>!), (>>=!))
+import Snap.SYTC.Component (Cmp, Cmp', (<$>!), (<*>!))
 import Snap.SYTC.Component as C
 
 _done    = SProxy :: _ "done"
@@ -125,9 +125,9 @@ todo = C.ado
   editor' = const <$>! editor
   editview = C.switch editor' viewer #! by _.editing
 
-listItem :: forall u u'. Cmp Effect (JSX -> Cmp Effect JSX (Maybe Todo) u') Filter u
-listItem _ f v _ Nothing  = mempty
-listItem _ f v _ (Just t) = R.li |= { className } |- v
+listItem :: forall u u'. Cmp Effect (Cmp Effect (JSX -> JSX) (Maybe Todo) u') Filter u
+listItem _ _ _ Nothing  _ = mempty
+listItem _ f _ (Just t) v = R.li |= { className } |- v
   where
   className =
        (if t.editing        then " editing "   else "")
@@ -138,7 +138,7 @@ listItem _ f v _ (Just t) = R.li |= { className } |- v
 todos :: Cmp' Effect JSX App
 todos = C.do
   li  <- listItem       #! prop _filter
-  tds <- (todo >>=! li) #! prop _todos <<< withered'
+  tds <- (li <*>! todo) #! prop _todos <<< withered'
   C.pure $ R.ul
      |= { className: "todo-list" }
      |- tds
