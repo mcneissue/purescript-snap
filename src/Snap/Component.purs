@@ -2,90 +2,142 @@ module Snap.Component where
 
 import Prelude
 
-import Data.Either (Either(..), either)
-import Data.Lens.Record (prop)
+import Data.Newtype (class Newtype, un, under)
 import Data.Profunctor (class Profunctor)
 import Data.Profunctor.Choice (class Choice)
+import Data.Profunctor.Lazy (class Lazy2)
+import Data.Profunctor.Monoidal (class Comonoidal, class ComonoidalMono, class Cosemigroupal, class CosemigroupalMono, class MonoidalMono, class SemigroupalMono, switch)
 import Data.Profunctor.Strong (class Strong)
-import Data.Symbol (class IsSymbol)
-import Data.Tuple (Tuple(..), curry, fst, snd, uncurry)
-import Heterogeneous.Folding (class HFoldl, hfoldl)
-import Heterogeneous.Mapping (class HMapWithIndex, class MappingWithIndex, hmapWithIndex)
-import Prim.Row (class Cons)
-import Type.Prelude (SProxy)
-import Type.Row.Homogeneous (class Homogeneous)
+import Snap.SYTC.Component (Cmp)
+import Snap.SYTC.Component as C
 
-newtype Component m v s u = Component ((u -> m Unit) -> s -> v)
+-- Profunctor wrapper
+newtype PComponent m v s u
+  = PComponent (Cmp m v s u)
 
-type Component' m v s = Component m v s s
+derive instance newtypeComponent :: Newtype (PComponent m v s u) _
 
-runComponent :: forall m v s u. Component m v s u -> ((u -> m Unit) -> s -> v)
-runComponent (Component cmp) = cmp
+ρ :: forall m v s u. Cmp m v s u -> PComponent m v s u
+ρ = PComponent
 
-switch :: forall m v a b c d. Component m v a b -> Component m v c d -> Component m v (Either a c) (Either b d)
-switch (Component f) (Component g) = Component \set -> either (f $ set <<< Left) (g $ set <<< Right)
+type PComponent' m v s
+  = PComponent m v s s
 
-instance semigroupComponent :: Semigroup v => Semigroup (Component m v s u) where
-  append (Component a) (Component b) = Component \u s -> a u s <> b u s
+instance componentLazy :: Lazy2 (PComponent m v) where
+  defer2 f = ρ $ actual (un ρ <<< f)
+    where
+    actual = C.defer
 
-instance monoidComponent :: Monoid v => Monoid (Component m v s u) where
-  mempty = Component \_ _ -> mempty
+instance semigroupComponent :: Semigroup v => Semigroup (PComponent m v s u) where
+  append a b = ρ $ actual (un ρ a) (un ρ b)
+    where
+    actual = C.append
 
-instance profunctorComponent :: Profunctor (Component m v) where
-  dimap :: forall a b c d m v. (a -> b) -> (c -> d) -> Component m v b c -> Component m v a d
-  dimap f g (Component cmp) = Component \u s -> cmp (u <<< g) (f s)
+instance monoidComponent :: Monoid v => Monoid (PComponent m v s u) where
+  mempty = ρ actual
+    where
+    actual = C.mempty
 
-instance strongComponent :: Strong (Component m v) where
-  first (Component cmp)  = Component \u s -> cmp (u <<< (\b -> Tuple b (snd s))) (fst s)
-  second (Component cmp) = Component \u s -> cmp (u <<< (\b -> Tuple (fst s) b)) (snd s)
+instance profunctorComponent :: Profunctor (PComponent m v) where
+  dimap f g cmp = ρ $ actual f g (un ρ cmp)
+    where
+    actual = C.dimap
 
-instance choiceComponent :: Monoid v => Choice (Component m v) where
-  left (Component cmp) = Component \u -> either (cmp (u <<< Left)) (const mempty)
-  right (Component cmp) = Component \u -> either (const mempty) (cmp (u <<< Right))
+instance strongComponent :: Strong (PComponent m v) where
+  first = ρ <<< actual <<< un ρ
+    where
+    actual = C.first
+  second = ρ <<< actual <<< un ρ
+    where
+    actual = C.second
 
-contraHoist :: forall m' m v s u. (m Unit -> m' Unit) -> Component m' v s u -> Component m v s u
-contraHoist nat (Component cmp) = Component \set s -> cmp (nat <<< set) s
+instance choiceComponent :: Monoid v => Choice (PComponent m v) where
+  left = ρ <<< actual <<< un ρ
+    where
+    actual = C.left
+  right = ρ <<< actual <<< un ρ
+    where
+    actual = C.right
 
-newtype MComponent s u m v = MComponent (Component m v s u)
+instance cosemigroupalMonoComponent :: CosemigroupalMono (PComponent m v) where
+  switchMono = switch
 
-runMComponent :: forall m v s u. MComponent s u m v -> Component m v s u
-runMComponent (MComponent c) = c
+instance cosemigroupalComponent :: Cosemigroupal (PComponent m v) where
+  switch f g = ρ $ actual (un ρ f) (un ρ g)
+    where
+    actual = C.switch
 
-wrap :: forall s u m v. (Tuple (u -> m Unit) s -> v) -> MComponent s u m v
-wrap = MComponent <<< Component <<< curry
+instance comonoidalMonoComponent :: ComonoidalMono (PComponent m v) where
+  never = ρ actual
+    where
+    actual = C.never
 
-unwrap :: forall s u m v. MComponent s u m v -> Tuple (u -> m Unit) s -> v
-unwrap = runMComponent >>> runComponent >>> uncurry
+instance comonoidalComponent :: Comonoidal (PComponent m v)
+
+instance semigroupalMonoComponent :: Monoid v => SemigroupalMono (PComponent m v) where
+  zipMono f g = ρ $ actual (un ρ f) (un ρ g)
+    where
+    actual = C.zipMono
+
+instance monoidalMonoComponent :: Monoid v => MonoidalMono (PComponent m v) where
+  infinite = ρ actual
+    where
+    actual = C.infinite
+
+focus :: forall m v s u x y. Newtype x y => (PComponent m v s u -> x) -> Cmp m v s u -> y
+focus = under ρ
+
+infixl 1 focus as $!
+
+flippedFocus :: forall m v s u x y. Newtype x y => Cmp m v s u -> (PComponent m v s u -> x) -> y
+flippedFocus = flip focus
+
+infixl 1 flippedFocus as #!
+
+-- Monad wrapper
+newtype MComponent s u m v
+  = MComponent (Cmp m v s u)
+
+derive instance newtypeMComponent :: Newtype (MComponent s u m v) _
+
+μ :: forall s u m v. Cmp m v s u -> MComponent s u m v
+μ = MComponent
 
 instance functorMComponent :: Functor (MComponent s u m) where
-  map f c = wrap $ map f (unwrap c)
+  map f = μ <<< actual f <<< un μ
+    where
+    actual = C.map
 
 instance applyMComponent :: Apply (MComponent s u m) where
-  apply fab fa = wrap $ (unwrap fab) <*> (unwrap fa)
+  apply fab fa = μ $ un μ fab `actual` un μ fa
+    where
+    actual = C.apply
 
 instance bindMComponent :: Bind (MComponent s u m) where
-  bind ma amb = wrap $ (unwrap ma) >>= (unwrap <<< amb)
+  bind ma amb = μ $ (un μ ma) `actual` (amb >>> un μ)
+    where
+    actual = C.bind
 
 instance applicativeMComponent :: Applicative (MComponent s u m) where
-  pure x = wrap (\_ -> x) -- TODO: Work out why I can't write this as wrap $ pure x
+  pure = μ <<< actual
+    where
+    actual = C.pure
 
-handle :: forall m v s u. (u -> s -> m Unit) -> Component m v s u -> Component' m v s
-handle f (Component c) = Component \set s -> c (flip f s) s
+newtype CComponent m s u c a b
+  = CComponent (Cmp m (c a b) s u)
 
-data FocusProp = FocusProp
+derive instance newtypeCComponent :: Newtype (CComponent m s u c a b) _
 
-instance focusProp :: (IsSymbol s, Strong p, Cons s a r r1, Cons s b r r2) => MappingWithIndex FocusProp (SProxy s) (p a b) (p { | r1 } { | r2 }) where
-  mappingWithIndex FocusProp s c = prop s c
+-- Category wrapper
+κ :: forall m s u c a b. Cmp m (c a b) s u -> CComponent m s u c a b
+κ = CComponent
 
-focus :: forall a r v. HMapWithIndex FocusProp a { | r } => HFoldl (v -> v -> v) v { | r } v => Homogeneous r v => Monoid v => a -> v
-focus = hmapWithIndex FocusProp >>> hfoldl ((<>) :: v -> v -> v) (mempty :: v)
+instance semigroupoidCComponent :: Semigroupoid c => Semigroupoid (CComponent m s u c) where
+  compose bc ab = κ $ actual (un κ bc) (un κ ab)
+    where
+    actual = C.compose
 
-combine :: forall a r v.
-     HMapWithIndex FocusProp a { | r }
-  => HFoldl (v -> v -> v) v { | r } v
-  => Homogeneous r v
-  => Monoid v
-  => v -> a -> v
-combine a b = a <> focus b
-
-infixl 1 combine as :<>:
+instance categoryMComponent :: Category c => Category (CComponent m u s c) where
+  identity = κ $ actual
+    where
+    actual = C.identity
