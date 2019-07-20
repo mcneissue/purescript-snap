@@ -29,6 +29,10 @@ _newTodo = SProxy :: _ "newTodo"
 _todos   = SProxy :: _ "todos"
 _filter  = SProxy :: _ "filter"
 
+-- TODO:
+-- 1. Set up commit/reject functionality for editor
+-- 2. Set up routing stuff
+
 -- #### STATE
 
 -- The state corresponding to a todo item
