@@ -2,7 +2,6 @@ module Snap.React.Component where
 
 import Prelude
 
-import Control.Category (compose)
 import Data.Functor.Variant (SProxy(..))
 import Data.Lens.Record (prop)
 import Data.Maybe (maybe)
@@ -16,7 +15,7 @@ import React.Basic.DOM.Events (key, targetChecked, targetValue)
 import React.Basic.Events (handler, handler_) as R
 import Record as RD
 import Snap.Component ((#!))
-import Snap.SYTC.Component (Cmp, Cmp', (<*>!))
+import Snap.SYTC.Component (Cmp, Cmp')
 import Snap.SYTC.Component as C
 
 -- Some convenience things
@@ -41,20 +40,27 @@ setChild f c = setChildren f [c]
 
 infixr 6 setChild as |-
 
+-- Graft a boolean state to whether a particular element is hovered
 hoverability set _ = (:+:) { onMouseOver, onMouseLeave }
   where
   onMouseOver = R.handler_ $ set true
   onMouseLeave = R.handler_ $ set false
 
+-- Emit unit values in response to click events on an element
 clickability set _ = (:+:) { onClick }
   where
   onClick = R.handler_ $ set unit
 
-focusability set s = (:+:) { onFocus, onBlur }
+-- Graft a boolean state to whether a particular element is focused
+-- TODO: Make this properly settable (right now we just ignore s)
+focusability set _ = (:+:) { onFocus, onBlur }
   where
   onFocus  = R.handler_ $ set true
   onBlur   = R.handler_ $ set false
 
+-- Graft a state to an element by rendering it through some given
+-- attribute, and emitting new ones through onChange
+-- fires
 changeability p e set s = (_ :+: { onChange } :+: RD.insert p s {})
   where
   onChange = R.handler e $ maybe (pure unit) set
@@ -94,13 +100,16 @@ transactionality { change, save, revert } = C.ado
   r <- revert #! P.rmap (const Revert)
   in c |~ s |~ r
 
+-- A button that accepts no state and emits unit values
 button = C.ado
   c <- clickability
   in R.button |~ c
 
+-- A text node that displays a string and never emits
 text :: forall m u. Cmp m R.JSX String u
 text _ = R.text
 
+-- A counter that manages a number
 counter :: Cmp' Effect R.JSX Int
 counter = C.ado
   inc <- button # C.handle_ (_ + 1)
@@ -115,6 +124,7 @@ counter = C.ado
 type InputState
   = { focused :: Boolean, value :: String }
 
+-- An input that manages whether it is focused and a string value
 input = C.ado
   focus  <- focusability      #! prop _focused
   change <- changeables.value #! prop _value
@@ -123,16 +133,21 @@ input = C.ado
   _focused = SProxy :: _ "focused"
   _value   = SProxy :: _ "value"
 
+-- A checkbox that manages a boolean
 checkbox = C.ado
   change <- changeables.checked
   in R.input |= { type: "checkbox" } |~ change
   where
   _checked = SProxy :: _ "checked"
 
+-- An img tag that accepts a URL and never emits
 img _ src = R.img |= { src }
 
+-- A component that accepts a boolean and renders a provided
+-- element if it is true
 conditional :: forall m u. Cmp m (R.JSX -> R.JSX) Boolean u
 conditional _ = if _ then identity else const mempty
 
+-- Wrapper around text that can be attached to show-able things
 debug :: forall m s u. Show s => Cmp m R.JSX s u
 debug = C.lcmap show text
