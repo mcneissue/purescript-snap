@@ -12,7 +12,7 @@ import Data.Foldable (class Foldable, and, length)
 import Data.Lens (Lens, Lens', Optic', first, left, lens, set, view)
 import Data.List (List(..), catMaybes)
 import Data.List as L
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Profunctor (class Profunctor, dimap, lcmap, rmap)
 import Data.Profunctor.Choice (class Choice)
 import Data.Profunctor.Lazy (class Lazy2, defer2)
@@ -353,3 +353,21 @@ type Getter s a = forall p x. Profunctor p => p a x -> p s x
 
 countBy :: forall f x. Filterable f => Foldable f => (x -> Boolean) -> Getter (f x) Int
 countBy p = lcmap (filter p >>> length)
+
+data Edit s = Change s | Save | Revert
+type Editable s = { saved :: s, modified :: Maybe s }
+
+edited :: forall s. Lens (Editable s) (Editable s) s (Edit s)
+edited = lens view (flip update)
+  where
+  view { saved, modified } = fromMaybe saved modified
+  update (Change v)   { saved, modified } = { saved, modified: Just v }
+  update Revert       { saved, modified } = { saved, modified: Nothing }
+  update Save       s@{ saved, modified } = { saved: view s, modified: Nothing }
+
+isEditing :: forall s. Lens' (Editable s) Boolean
+isEditing = lens view (flip update)
+  where
+  view { modified } = isJust modified
+  update true { saved, modified } = { saved, modified: Just $ fromMaybe saved modified }
+  update false { saved, modified } = { saved, modified: Nothing }

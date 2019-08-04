@@ -6,6 +6,8 @@ import Control.Category (compose)
 import Data.Functor.Variant (SProxy(..))
 import Data.Lens.Record (prop)
 import Data.Maybe (maybe)
+import Data.Profunctor as P
+import Data.Profunctor.Optics (Edit(..))
 import Effect (Effect)
 import Prim.Row (class Union)
 import React.Basic (JSX) as R
@@ -53,13 +55,44 @@ focusability set s = (:+:) { onFocus, onBlur }
   onFocus  = R.handler_ $ set true
   onBlur   = R.handler_ $ set false
 
-changeability p e set s = (:+:) { onChange } <<< (:+:) (RD.insert p s {})
+changeability p e set s = (_ :+: { onChange } :+: RD.insert p s {})
   where
   onChange = R.handler e $ maybe (pure unit) set
 
-keypressability set _ = (:+:) { onKeyPress }
+-- Some common targets of changeability
+changeables =
+  { value  : changeability _value targetValue
+  , checked: changeability _checked targetChecked
+  }
   where
-  onKeyPress = R.handler key $ maybe (pure unit) set
+  _value = SProxy :: _ "value"
+  _checked = SProxy :: _ "checked"
+
+-- TODO: Deal with mashing together multiple handlers for the same event using monoidness
+--       , some kind of monoided out unionWith thingus is needed
+
+-- Emit characters in response to keypress events on an element
+keypressability set _ = (<>) { onKeyUp }
+  where
+  onKeyUp = R.handler key $ maybe (pure unit) set
+
+-- Some common keypresses you might want to look for
+keys =
+  { enter : keypressability # C.when ((==) "Enter")
+  , escape: keypressability # C.when ((==) "Escape")
+  , tab   : keypressability # C.when ((==) "Tab")
+  }
+
+-- Given an affordance that emits values, and two
+-- other affordances that simply emit anything,
+-- interpret emissions of the former as tentative
+-- updates, and the emissions of the latter two
+-- as saves and reverts
+transactionality { change, save, revert } = C.ado
+  c <- change #! P.rmap Change
+  s <- save   #! P.rmap (const Save)
+  r <- revert #! P.rmap (const Revert)
+  in c |~ s |~ r
 
 button = C.ado
   c <- clickability
@@ -83,15 +116,15 @@ type InputState
   = { focused :: Boolean, value :: String }
 
 input = C.ado
-  focus  <- focusability                     #! prop _focused
-  change <- changeability _value targetValue #! prop _value
+  focus  <- focusability      #! prop _focused
+  change <- changeables.value #! prop _value
   in R.input |~ change |~ focus
   where
   _focused = SProxy :: _ "focused"
   _value   = SProxy :: _ "value"
 
 checkbox = C.ado
-  change <- changeability _checked targetChecked
+  change <- changeables.checked
   in R.input |= { type: "checkbox" } |~ change
   where
   _checked = SProxy :: _ "checked"

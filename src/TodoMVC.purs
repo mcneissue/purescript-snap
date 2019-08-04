@@ -5,16 +5,17 @@ import Prelude hiding (map,apply)
 import Data.Array (snoc)
 import Data.Functor.Variant (SProxy(..))
 import Data.Lens (_Just)
+import Data.Lens as L
 import Data.Lens.Record (prop)
 import Data.Lens.Record.Extra (extractedBy, remappedBy)
-import Data.Maybe (Maybe(..))
-import Data.Profunctor (lcmap)
-import Data.Profunctor.Optics (all, by, partsOf', traversed', withered', overArray, countBy)
+import Data.Maybe (Maybe(..), isJust)
+import Data.Profunctor as P
+import Data.Profunctor.Optics (Editable, all, by, countBy, edited, isEditing, overArray, partsOf', traversed', withered')
 import Data.String (trim)
 import Effect (Effect)
 import React.Basic (JSX)
-import React.Basic.DOM (a, div, footer, h1, header, label, li, section, span, strong, text, ul) as R
-import Snap.Component (($!), (#!))
+import React.Basic.DOM (a, div, footer, h1, header, label, li, section, span, strong, text, ul, input) as R
+import Snap.Component ((#!))
 import Snap.React.Component (InputState, (|-), (|<), (|=), (|~))
 import Snap.React.Component as S
 import Snap.SYTC.Component (Cmp, Cmp', (<$>!), (<*>!))
@@ -22,7 +23,7 @@ import Snap.SYTC.Component as C
 
 _done    = SProxy :: _ "done"
 _hovered = SProxy :: _ "hovered"
-_editing = SProxy :: _ "editing"
+_edit    = SProxy :: _ "edit"
 _value   = SProxy :: _ "value"
 _focused = SProxy :: _ "focused"
 _newTodo = SProxy :: _ "newTodo"
@@ -39,8 +40,8 @@ _filter  = SProxy :: _ "filter"
 type Todo =
   { done :: Boolean
   , hovered :: Boolean
-  , editing :: Boolean
   , value :: String
+  , edit :: Maybe String
   }
 
 type Todos = Array Todo
@@ -70,7 +71,7 @@ createTodo =
   { value: _
   , done: false
   , hovered: false
-  , editing: false
+  , edit: Nothing
   }
 
 defaultNewTodo :: InputState
@@ -80,23 +81,28 @@ defaultNewTodo = { focused: true, value: "" }
 initialState :: App
 initialState = { newTodo: defaultNewTodo, todos: [], filter: All }
 
+todoValue :: L.Lens' Todo (Editable String)
+todoValue = remappedBy scheme >>> extractedBy scheme
+  where
+  scheme = { value: SProxy :: _ "saved", edit: SProxy :: _ "modified" }
+
+editingTodo :: L.Lens' Todo Boolean
+editingTodo = isEditing >>> todoValue
+
 -- #### UI
 
--- TODO: Handle escape button press
 -- TODO: Destroy input if value is empty
 -- The editor for todo items
 editor :: Cmp' Effect JSX Todo
-editor = subpart $! C.ado
-  kp    <- S.keypressability
-           #  C.handle keyHandler
-           #! prop _focused
-  txt <- S.input
-  in txt |~ kp $ { className: "edit" }
-  where
-  subpart = extractedBy scheme <<< remappedBy scheme
-  scheme = { editing: _focused, value: _value }
-  keyHandler k | k == "Enter" = const false
-               | otherwise    = identity
+editor = C.ado
+  edt <- S.transactionality
+           { change: S.changeables.value
+           , save  : S.keys.enter
+           , revert: S.keys.escape
+           }
+           #! edited >>> todoValue
+  fcs <- S.focusability #! editingTodo
+  in R.input |= edt mempty |~ fcs $ { className: "edit" } -- the mempty in here is a hack, see the TODO in the snap.react module
 
 -- The renderer for todo items. Accepts some conditionally
 -- rendered content that will be shown when hovering the todo
@@ -104,8 +110,8 @@ viewer :: Cmp' Effect (JSX -> JSX) Todo
 viewer = C.ado
   chk  <- S.checkbox     #! prop _done
   txt  <- S.text         #! prop _value
-  veil <- S.conditional  #! lcmap _.hovered
-  ckbl <- S.clickability #  C.handle_ \s -> s { editing = true, hovered = true }
+  veil <- S.conditional  #! P.lcmap _.hovered
+  ckbl <- S.clickability #! P.rmap (const true) >>> editingTodo
   hvbl <- S.hoverability #! prop _hovered
   in
   \extra ->
@@ -118,7 +124,7 @@ viewer = C.ado
        ]
 
 -- A todo item
--- Depending on the value of the "editing" field, shows an
+-- Depending on the value of the "edit" field, shows an
 -- editor or a renderer.
 todo :: Cmp' Effect JSX (Maybe Todo)
 todo = C.ado
@@ -127,14 +133,14 @@ todo = C.ado
   in ev $ del { className: "destroy" }
   where
   editor' = const <$>! editor
-  editview = C.switch editor' viewer #! by _.editing
+  editview = C.switch editor' viewer #! by (L.view editingTodo)
 
 listItem :: forall u u'. Cmp Effect (Cmp Effect (JSX -> JSX) (Maybe Todo) u') Filter u
 listItem _ _ _ Nothing  _ = mempty
 listItem _ f _ (Just t) v = R.li |= { className } |- v
   where
   className =
-       (if t.editing        then " editing "   else "")
+       (if isJust t.edit    then " editing "   else "")
     <> (if t.done           then " completed " else "")
     <> (if (shouldHide f t) then " hidden "    else "")
 
@@ -159,15 +165,12 @@ allDone = C.ado
 -- The header for the todo list
 header :: Cmp' Effect JSX App
 header = C.ado
-  key <- S.keypressability
-         # C.handle \k -> if k == "Enter"
-                          then addTodo
-                          else identity
+  key <- S.keys.enter # C.handle_ addTodo
   inp <- S.input #! prop _newTodo
   in R.header
      |= { className: "header" }
      |< [ R.h1 |- R.text "todos"
-        , inp |~ key $ { className: "new-todo", placeholder: "What needs to be done?" }
+        , inp |= key mempty $ { className: "new-todo", placeholder: "What needs to be done?" } -- Same mempty hack here (again with the not knowing how to union dictionaries with duplicate keys)
         ]
   where
   addTodo s =
@@ -211,7 +214,7 @@ filters = C.ado
 footer :: Cmp' Effect JSX App
 footer = C.ado
   count <- itemCount     #! prop _todos <<< countBy (not _.done)
-  veil  <- S.conditional #! prop _todos <<< countBy _.done <<< lcmap (_ > 0)
+  veil  <- S.conditional #! prop _todos <<< countBy _.done <<< P.lcmap (_ > 0)
   fltrs <- filters       #! prop _filter
   clear <- S.button
            #  C.handle_ (_ <#> const false)
@@ -234,7 +237,7 @@ app = C.ado
   veil <- S.conditional
           #! prop _todos <<<
              countBy (const true) <<<
-             lcmap (_ > 0)
+             P.lcmap (_ > 0)
   hdr  <- header
   tds  <- todos
   tgl  <- allDone #! prop _todos
