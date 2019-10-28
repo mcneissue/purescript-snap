@@ -31,8 +31,7 @@ _todos   = SProxy :: _ "todos"
 _filter  = SProxy :: _ "filter"
 
 -- TODO:
--- 1. Set up commit/reject functionality for editor
--- 2. Set up routing stuff
+-- 1. Set up routing stuff
 
 -- #### STATE
 
@@ -170,7 +169,7 @@ header = C.ado
   in R.header
      |= { className: "header" }
      |< [ R.h1 |- R.text "todos"
-        , inp |~ key $ { className: "new-todo", placeholder: "What needs to be done?" } -- Same mempty hack here (again with the not knowing how to union dictionaries with duplicate keys)
+        , inp |~ key $ { className: "new-todo", placeholder: "What needs to be done?" }
         ]
   where
   addTodo s =
