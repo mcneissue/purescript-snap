@@ -95,14 +95,14 @@ editingTodo = isEditing >>> todoValue
 -- The editor for todo items
 editor :: Cmp' Effect JSX Todo
 editor = C.ado
-  edt <- S.transactionality
-           { change: S.changeables.value
-           , save  : S.keys.enter
-           , revert: S.keys.escape
-           }
-           #! edited >>> todoValue
-  fcs <- S.focusability #! editingTodo
-  in R.input |= edt mempty |~ fcs $ { className: "edit" } -- the mempty in here is a hack, see the TODO in the snap.react module
+  editing <- S.transactionality
+             { change: S.editability
+             , save  : S.enter
+             , revert: S.escape
+             }
+             #! edited >>> todoValue
+  focus <- S.focusability #! editingTodo
+  in R.input |~ editing |~ focus $ { className: "edit" }
 
 -- The renderer for todo items. Accepts some conditionally
 -- rendered content that will be shown when hovering the todo
@@ -165,12 +165,12 @@ allDone = C.ado
 -- The header for the todo list
 header :: Cmp' Effect JSX App
 header = C.ado
-  key <- S.keys.enter # C.handle_ addTodo
+  key <- S.enter # C.handle_ addTodo
   inp <- S.input #! prop _newTodo
   in R.header
      |= { className: "header" }
      |< [ R.h1 |- R.text "todos"
-        , inp |= key mempty $ { className: "new-todo", placeholder: "What needs to be done?" } -- Same mempty hack here (again with the not knowing how to union dictionaries with duplicate keys)
+        , inp |~ key $ { className: "new-todo", placeholder: "What needs to be done?" } -- Same mempty hack here (again with the not knowing how to union dictionaries with duplicate keys)
         ]
   where
   addTodo s =

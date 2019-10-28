@@ -21,6 +21,7 @@ You can edit this file as you like.
     , "record-optics-extra"
     , "filterable"
     , "debug"
+    , "type-equality"
     ]
 , packages =
     ./packages.dhall
