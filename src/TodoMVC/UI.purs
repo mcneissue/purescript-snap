@@ -1,92 +1,23 @@
-module TodoMVC where
+module TodoMVC.UI where
 
 import Prelude hiding (map,apply)
 
 import Data.Array (snoc)
-import Data.Functor.Variant (SProxy(..))
 import Data.Lens (_Just)
 import Data.Lens as L
-import Data.Lens.Record (prop)
-import Data.Lens.Record.Extra (extractedBy, remappedBy)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Profunctor as P
-import Data.Profunctor.Optics (Editable, all, by, countBy, edited, isEditing, overArray, partsOf', traversed', withered')
+import Data.Profunctor.Optics (all, by, countBy, edited, overArray, partsOf', traversed', withered')
 import Data.String (trim)
 import Effect (Effect)
 import React.Basic (JSX)
 import React.Basic.DOM (a, div, footer, h1, header, label, li, section, span, strong, text, ul, input) as R
 import Snap.Component ((#!))
-import Snap.React.Component (InputState, (|-), (|<), (|=), (|~))
+import Snap.React.Component ((|-), (|<), (|=), (|~))
 import Snap.React.Component as S
 import Snap.SYTC.Component (Cmp, Cmp', (<$>!), (<*>!))
 import Snap.SYTC.Component as C
-
-_done    = SProxy :: _ "done"
-_hovered = SProxy :: _ "hovered"
-_edit    = SProxy :: _ "edit"
-_value   = SProxy :: _ "value"
-_focused = SProxy :: _ "focused"
-_newTodo = SProxy :: _ "newTodo"
-_todos   = SProxy :: _ "todos"
-_filter  = SProxy :: _ "filter"
-
--- TODO:
--- 1. Set up routing stuff
-
--- #### STATE
-
--- The state corresponding to a todo item
-type Todo =
-  { done :: Boolean
-  , hovered :: Boolean
-  , value :: String
-  , edit :: Maybe String
-  }
-
-type Todos = Array Todo
-
-data Filter = All | Active | Completed
-derive instance eqFilter :: Eq Filter
-
-instance showFilter :: Show Filter where
-  show All = "All"
-  show Active = "Active"
-  show Completed = "Completed"
-
-shouldHide :: Filter -> Todo -> Boolean
-shouldHide All       = const false
-shouldHide Active    = _.done
-shouldHide Completed = not _.done
-
-type App =
-  { newTodo :: InputState
-  , todos :: Todos
-  , filter :: Filter
-  }
-
--- Create a new todo
-createTodo :: String -> Todo
-createTodo =
-  { value: _
-  , done: false
-  , hovered: false
-  , edit: Nothing
-  }
-
-defaultNewTodo :: InputState
-defaultNewTodo = { focused: true, value: "" }
-
--- Initial application state consists of three components
-initialState :: App
-initialState = { newTodo: defaultNewTodo, todos: [], filter: All }
-
-todoValue :: L.Lens' Todo (Editable String)
-todoValue = remappedBy scheme >>> extractedBy scheme
-  where
-  scheme = { value: SProxy :: _ "saved", edit: SProxy :: _ "modified" }
-
-editingTodo :: L.Lens' Todo Boolean
-editingTodo = isEditing >>> todoValue
+import TodoMVC.State (App, Filter(..), Todo, Todos, _done, _hovered, _value, _newTodo, _todos, _filter, createTodo, defaultNewTodo, editingTodo, shouldHide, todoValue)
 
 -- #### UI
 
@@ -107,11 +38,11 @@ editor = C.ado
 -- rendered content that will be shown when hovering the todo
 viewer :: Cmp' Effect (JSX -> JSX) Todo
 viewer = C.ado
-  chk  <- S.checkbox     #! prop _done
-  txt  <- S.text         #! prop _value
+  chk  <- S.checkbox     #! _done
+  txt  <- S.text         #! _value
   veil <- S.conditional  #! P.lcmap _.hovered
   ckbl <- S.clickability #! P.rmap (const true) >>> editingTodo
-  hvbl <- S.hoverability #! prop _hovered
+  hvbl <- S.hoverability #! _hovered
   in
   \extra ->
     R.div
@@ -146,8 +77,8 @@ listItem _ f _ (Just t) v = R.li |= { className } |- v
 -- A list of todos, which can delete themselves from the list
 todos :: Cmp' Effect JSX App
 todos = C.do
-  li  <- listItem       #! prop _filter
-  tds <- (li <*>! todo) #! prop _todos <<< withered'
+  li  <- listItem       #! _filter
+  tds <- (li <*>! todo) #! _todos <<< withered'
   C.pure $ R.ul
      |= { className: "todo-list" }
      |- tds
@@ -155,7 +86,7 @@ todos = C.do
 -- A checkbox to control the state of all todo items
 allDone :: Cmp' Effect JSX Todos
 allDone = C.ado
-  chk <- S.checkbox #! all >>> partsOf' (traversed' <<< prop _done)
+  chk <- S.checkbox #! all >>> partsOf' (traversed' <<< _done)
   in chk { id: "toggle-all", className: "toggle-all" }
      <> R.label
         |= { htmlFor: "toggle-all" }
@@ -165,7 +96,7 @@ allDone = C.ado
 header :: Cmp' Effect JSX App
 header = C.ado
   key <- S.enter # C.handle_ addTodo
-  inp <- S.input #! prop _newTodo
+  inp <- S.input #! _newTodo
   in R.header
      |= { className: "header" }
      |< [ R.h1 |- R.text "todos"
@@ -212,12 +143,12 @@ filters = C.ado
 
 footer :: Cmp' Effect JSX App
 footer = C.ado
-  count <- itemCount     #! prop _todos <<< countBy (not _.done)
-  veil  <- S.conditional #! prop _todos <<< countBy _.done <<< P.lcmap (_ > 0)
-  fltrs <- filters       #! prop _filter
+  count <- itemCount     #! _todos <<< countBy (not _.done)
+  veil  <- S.conditional #! _todos <<< countBy _.done <<< P.lcmap (_ > 0)
+  fltrs <- filters       #! _filter
   clear <- S.button
            #  C.handle_ (_ <#> const false)
-           #! prop _todos <<< overArray (prop _done)
+           #! _todos <<< overArray _done
   in R.footer
      |= { className: "footer" }
      |< [ R.span
@@ -234,12 +165,12 @@ footer = C.ado
 app :: Cmp' Effect JSX App
 app = C.ado
   veil <- S.conditional
-          #! prop _todos <<<
+          #! _todos <<<
              countBy (const true) <<<
              P.lcmap (_ > 0)
   hdr  <- header
   tds  <- todos
-  tgl  <- allDone #! prop _todos
+  tgl  <- allDone #! _todos
   ftr  <- footer
   dbg  <- S.debug
   in R.section
