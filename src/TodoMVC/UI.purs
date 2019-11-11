@@ -2,7 +2,7 @@ module TodoMVC.UI where
 
 import Prelude hiding (map,apply)
 
-import Data.Array (snoc)
+import Data.Array (filter, snoc) as A
 import Data.Lens (_Just)
 import Data.Lens as L
 import Data.Maybe (Maybe(..), isJust)
@@ -106,7 +106,7 @@ header = C.ado
     let v = trim s.newTodo.value
     in if v == ""
        then s
-       else s { todos = s.todos `snoc` T.createTodo v, newTodo = T.defaultNewTodo }
+       else s { todos = s.todos `A.snoc` T.createTodo v, newTodo = T.defaultNewTodo }
 
 itemCount :: forall u. Cmp Effect JSX Int u
 itemCount _ = go
@@ -146,8 +146,8 @@ footer = C.ado
   veil  <- S.conditional #! T._todos <<< countBy _.done <<< P.lcmap (_ > 0)
   fltrs <- filters       #! T._filter
   clear <- S.button
-           #  C.handle_ (_ <#> const false)
-           #! T._todos <<< overArray T._done
+           #  C.handle_ (A.filter $ not _.done)
+           #! T._todos
   in R.footer
      |= { className: "footer" }
      |< [ R.span
