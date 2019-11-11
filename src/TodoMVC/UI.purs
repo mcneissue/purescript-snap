@@ -17,7 +17,8 @@ import Snap.React.Component ((|-), (|<), (|=), (|~))
 import Snap.React.Component as S
 import Snap.SYTC.Component (Cmp, Cmp', (<$>!), (<*>!))
 import Snap.SYTC.Component as C
-import TodoMVC.State (App, Filter(..), Todo, Todos, _done, _hovered, _value, _newTodo, _todos, _filter, createTodo, defaultNewTodo, editingTodo, shouldHide, todoValue)
+import TodoMVC.State (App, Filter(..), Todo, Todos)
+import TodoMVC.State (_dirty, _done, _filter, _hovered, _newTodo, _state, _todos, _value, createTodo, defaultNewTodo, shouldHide) as T
 
 -- #### UI
 
@@ -29,19 +30,19 @@ editor = C.ado
              { change: S.edited
              , save  : S.enterPressed
              , revert: S.escapePressed
-             } #! todoValue
-  focus <- S.focused #! editingTodo
+             } #! T._state
+  focus <- S.focused #! T._dirty
   in R.input |~ editing |~ focus $ { className: "edit" }
 
 -- The renderer for todo items. Accepts some conditionally
 -- rendered content that will be shown when hovering the todo
 viewer :: Cmp' Effect (JSX -> JSX) Todo
 viewer = C.ado
-  chk  <- S.checkbox    #! _done
-  txt  <- S.text        #! _value
-  veil <- S.conditional #! P.lcmap _.hovered
-  ckbl <- S.clicked     #! P.rmap (const true) >>> editingTodo
-  hvbl <- S.hovering    #! _hovered
+  chk  <- S.checkbox    #! T._done
+  txt  <- S.text        #! T._value
+  veil <- S.conditional #! T._hovered
+  ckbl <- S.clicked     #! P.rmap (const true) >>> T._dirty
+  hvbl <- S.hovering    #! T._hovered
   in
   \extra ->
     R.div
@@ -62,22 +63,22 @@ todo = C.ado
   in ev $ del { className: "destroy" }
   where
   editor' = const <$>! editor
-  editview = C.switch editor' viewer #! by (L.view editingTodo)
+  editview = C.switch editor' viewer #! by (L.view T._dirty)
 
 listItem :: forall u u'. Cmp Effect (Cmp Effect (JSX -> JSX) (Maybe Todo) u') Filter u
 listItem _ _ _ Nothing  _ = mempty
 listItem _ f _ (Just t) v = R.li |= { className } |- v
   where
   className =
-       (if isJust t.edit    then " editing "   else "")
-    <> (if t.done           then " completed " else "")
-    <> (if (shouldHide f t) then " hidden "    else "")
+       (if isJust t.modification then " editing "   else "")
+    <> (if t.done                then " completed " else "")
+    <> (if (T.shouldHide f t)    then " hidden "    else "")
 
 -- A list of todos, which can delete themselves from the list
 todos :: Cmp' Effect JSX App
 todos = C.do
-  li  <- listItem       #! _filter
-  tds <- (li <*>! todo) #! _todos <<< withered'
+  li  <- listItem       #! T._filter
+  tds <- (li <*>! todo) #! T._todos <<< withered'
   C.pure $ R.ul
      |= { className: "todo-list" }
      |- tds
@@ -85,7 +86,7 @@ todos = C.do
 -- A checkbox to control the state of all todo items
 allDone :: Cmp' Effect JSX Todos
 allDone = C.ado
-  chk <- S.checkbox #! all >>> partsOf' (traversed' <<< _done)
+  chk <- S.checkbox #! all >>> partsOf' (traversed' <<< T._done)
   in chk { id: "toggle-all", className: "toggle-all" }
      <> R.label
         |= { htmlFor: "toggle-all" }
@@ -95,7 +96,7 @@ allDone = C.ado
 header :: Cmp' Effect JSX App
 header = C.ado
   key <- S.enterPressed # C.handle_ addTodo
-  inp <- S.input #! _newTodo
+  inp <- S.input #! T._newTodo
   in R.header
      |= { className: "header" }
      |< [ R.h1 |- R.text "todos"
@@ -106,7 +107,7 @@ header = C.ado
     let v = trim s.newTodo.value
     in if v == ""
        then s
-       else s { todos = s.todos `snoc` createTodo v, newTodo = defaultNewTodo }
+       else s { todos = s.todos `snoc` T.createTodo v, newTodo = T.defaultNewTodo }
 
 itemCount :: forall u. Cmp Effect JSX Int u
 itemCount _ = go
@@ -142,12 +143,12 @@ filters = C.ado
 
 footer :: Cmp' Effect JSX App
 footer = C.ado
-  count <- itemCount     #! _todos <<< countBy (not _.done)
-  veil  <- S.conditional #! _todos <<< countBy _.done <<< P.lcmap (_ > 0)
-  fltrs <- filters       #! _filter
+  count <- itemCount     #! T._todos <<< countBy (not _.done)
+  veil  <- S.conditional #! T._todos <<< countBy _.done <<< P.lcmap (_ > 0)
+  fltrs <- filters       #! T._filter
   clear <- S.button
            #  C.handle_ (_ <#> const false)
-           #! _todos <<< overArray _done
+           #! T._todos <<< overArray T._done
   in R.footer
      |= { className: "footer" }
      |< [ R.span
@@ -164,12 +165,12 @@ footer = C.ado
 app :: Cmp' Effect JSX App
 app = C.ado
   veil <- S.conditional
-          #! _todos <<<
+          #! T._todos <<<
              countBy (const true) <<<
              P.lcmap (_ > 0)
   hdr  <- header
   tds  <- todos
-  tgl  <- allDone #! _todos
+  tgl  <- allDone #! T._todos
   ftr  <- footer
   dbg  <- S.debug
   in R.section

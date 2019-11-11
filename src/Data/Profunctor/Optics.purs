@@ -361,19 +361,19 @@ countBy :: forall f x. Filterable f => Foldable f => (x -> Boolean) -> Getter (f
 countBy p = lcmap (filter p >>> length)
 
 data Edit s = Change s | Save | Revert
-type Transactional s = { saved :: s, modified :: Maybe s }
+type Transactional s = { value :: s, modification :: Maybe s }
 
 atomically :: forall s. Lens (Transactional s) (Transactional s) s (Edit s)
 atomically = lens view (flip update)
   where
-  view { saved, modified } = fromMaybe saved modified
-  update (Change v)   { saved, modified } = { saved, modified: Just v }
-  update Revert       { saved, modified } = { saved, modified: Nothing }
-  update Save       s@{ saved, modified } = { saved: view s, modified: Nothing }
+  view { value, modification } = fromMaybe value modification
+  update (Change v)   { value, modification } = { value, modification: Just v }
+  update Revert       { value, modification } = { value, modification: Nothing }
+  update Save       s@{ value, modification } = { value: view s, modification: Nothing }
 
 isDirty :: forall s. Lens' (Transactional s) Boolean
 isDirty = lens view (flip update)
   where
-  view { modified } = isJust modified
-  update true { saved, modified } = { saved, modified: Just $ fromMaybe saved modified }
-  update false { saved, modified } = { saved, modified: Nothing }
+  view { modification } = isJust modification
+  update true  { value, modification } = { value, modification: Just $ fromMaybe value modification }
+  update false { value, modification } = { value, modification: Nothing }

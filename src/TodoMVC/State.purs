@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Lens as L
 import Data.Lens.Record (prop)
-import Data.Lens.Record.Extra (extractedBy, remappedBy)
+import Data.Lens.Record.Extra (extractedBy)
 import Data.Maybe (Maybe(..))
 import Data.Profunctor.Optics (Transactional, isDirty)
 import Data.Symbol (SProxy(..))
@@ -20,7 +20,7 @@ type Todo =
   { done :: Boolean
   , hovered :: Boolean
   , value :: String
-  , edit :: Maybe String
+  , modification :: Maybe String
   }
 
 type Todos = Array Todo
@@ -50,7 +50,7 @@ createTodo =
   { value: _
   , done: false
   , hovered: false
-  , edit: Nothing
+  , modification: Nothing
   }
 
 defaultNewTodo :: InputState
@@ -60,30 +60,43 @@ defaultNewTodo = { focused: true, value: "" }
 initialState :: App
 initialState = { newTodo: defaultNewTodo, todos: [], filter: All }
 
-todoValue :: L.Lens' Todo (Transactional String)
-todoValue = remappedBy scheme >>> extractedBy scheme
-  where
-  scheme = { value: SProxy :: _ "saved", edit: SProxy :: _ "modified" }
-
-editingTodo :: L.Lens' Todo Boolean
-editingTodo = isDirty >>> todoValue
-
 proxies =
-  { done:    SProxy :: _ "done"
-  , hovered: SProxy :: _ "hovered"
-  , edit:    SProxy :: _ "edit"
-  , value:   SProxy :: _ "value"
-  , focused: SProxy :: _ "focused"
-  , newTodo: SProxy :: _ "newTodo"
-  , todos:   SProxy :: _ "todos"
-  , filter:  SProxy :: _ "filter"
+  { done:         SProxy :: _ "done"
+  , hovered:      SProxy :: _ "hovered"
+  , modification: SProxy :: _ "modification"
+  , value:        SProxy :: _ "value"
+  , focused:      SProxy :: _ "focused"
+  , newTodo:      SProxy :: _ "newTodo"
+  , todos:        SProxy :: _ "todos"
+  , filter:       SProxy :: _ "filter"
   }
 
+_state :: L.Lens' Todo (Transactional String)
+_state = extractedBy { value: SProxy, modification: SProxy }
+
+_dirty :: L.Lens' Todo Boolean
+_dirty = isDirty >>> _state
+
+_done :: L.Lens' Todo Boolean
 _done    = prop proxies.done
+
+_hovered :: L.Lens' Todo Boolean
 _hovered = prop proxies.hovered
-_edit    = prop proxies.edit
+
+_modification :: L.Lens' Todo (Maybe String)
+_modification = prop proxies.modification
+
+_value :: L.Lens' Todo String
 _value   = prop proxies.value
+
+_focused :: L.Lens' InputState Boolean
 _focused = prop proxies.focused
+
+_newTodo :: L.Lens' App InputState
 _newTodo = prop proxies.newTodo
+
+_todos :: L.Lens' App Todos
 _todos   = prop proxies.todos
+
+_filter :: L.Lens' App Filter
 _filter  = prop proxies.filter
