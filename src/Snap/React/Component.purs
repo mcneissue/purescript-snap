@@ -16,7 +16,7 @@ import Effect.Aff.Compat (EffectFn1)
 import Prim.Row (class Cons, class Lacks, class Union)
 import React.Basic (JSX) as R
 import React.Basic.DOM (button, div, img, input, text) as R
-import React.Basic.DOM (Props_button, Props_input, SharedProps, Props_img)
+import React.Basic.DOM (Props_button, Props_input, Props_img)
 import React.Basic.DOM.Events (key, targetChecked, targetValue) as R
 import React.Basic.Events (EventFn, SyntheticEvent)
 import React.Basic.Events (handler, handler_) as R
@@ -168,7 +168,7 @@ transacted { change, save, revert } = atomically $! C.ado
 -- A button that accepts no state and emits unit values
 button :: forall s ri ro x.
   AppendRecord ri ( onClick :: EffectFn1 SyntheticEvent Unit ) ro =>
-  Union ro x (SharedProps Props_button) =>
+  Union ro x Props_button =>
   Cmp Effect ({ | ri } -> R.JSX) s Unit
 button = C.ado
   c <- clicked
@@ -204,7 +204,7 @@ input :: forall a b c.
     ( onChange :: EffectFn1 SyntheticEvent Unit
     , value :: String )
     c =>
-  Union c _ (SharedProps Props_input) =>
+  Union c _ Props_input =>
   Cmp' Effect ({ | a } -> R.JSX) { focused :: Boolean, value :: String }
 input = C.ado
   focus  <- focused #! prop (SProxy :: SProxy "focused")
@@ -218,7 +218,7 @@ checkbox :: forall a b c.
     , checked :: Boolean )
     b =>
   Union b ( type :: String ) c =>
-  Union c _ (SharedProps Props_input) =>
+  Union c _ Props_input =>
   Cmp' Effect ({ | a } -> R.JSX) Boolean
 checkbox = C.ado
   change <- checked
@@ -229,7 +229,7 @@ checkbox = C.ado
 -- An img tag that accepts a URL and never emits
 img :: forall a b x u.
   Union a ( src :: String) b =>
-  Union b x (SharedProps Props_img) =>
+  Union b x Props_img =>
   Cmp Effect ({ | a } -> R.JSX) String u
 img _ src = R.img |= { src }
 
