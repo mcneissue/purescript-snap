@@ -1,5 +1,6 @@
 module Snap.SYTC.Component where
 
+import Control.Applicative (class Applicative)
 import Control.Apply (lift2) as A
 import Control.Category (class Category, class Semigroupoid, (<<<), (>>>))
 import Data.Bifunctor (bimap)
@@ -123,3 +124,8 @@ handle f c set s = c (flip f s >>> set) s
 
 handle_ :: forall m v s u. (s -> s) -> Cmp m v s u -> Cmp' m v s
 handle_ f c set s = c ((const $ f s) >>> set) s
+
+when :: forall m v s u. Applicative m => (u -> Boolean) -> Cmp m v s u -> Cmp m v s u
+when f c set = c set'
+  where
+  set' u = if f u then set u else P.pure unit

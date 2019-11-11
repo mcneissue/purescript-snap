@@ -5,14 +5,14 @@ import Prelude
 import Control.Monad.State (evalState, get, put)
 import Data.Array (zipWith)
 import Data.Bifoldable (bifoldMap)
-import Data.Bifunctor (bimap, lmap) as B
+import Data.Bifunctor (lmap, bimap)
 import Data.Either (Either(..), either)
 import Data.Filterable (class Filterable, filter)
 import Data.Foldable (class Foldable, and, length)
-import Data.Lens (Lens, Lens', Optic', first, left, lens, set, view)
+import Data.Lens (Iso', Lens, Lens', first, left, lens, set, view)
 import Data.List (List(..), catMaybes)
 import Data.List as L
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Profunctor (class Profunctor, dimap, lcmap, rmap)
 import Data.Profunctor.Choice (class Choice)
 import Data.Profunctor.Lazy (class Lazy2, defer2)
@@ -200,7 +200,7 @@ firstTraversal :: forall a b s t x. LTraversal' a b s t -> LTraversal' a b (Tupl
 firstTraversal (LTraversal' l) = LTraversal' { contents, fill }
   where
   contents = lcmap (uncurry const) l.contents
-  fill = B.lmap <<< l.fill
+  fill = lmap <<< l.fill
 
 instance strongTraversal :: Strong (LTraversal' a b) where
   first = firstTraversal
@@ -210,7 +210,7 @@ leftTraversal :: forall a b s t x. LTraversal' a b s t -> LTraversal' a b (Eithe
 leftTraversal (LTraversal' l) = LTraversal' { contents, fill }
   where
   contents = either l.contents (const L.Nil)
-  fill xs = B.lmap (l.fill xs)
+  fill xs = lmap (l.fill xs)
 
 flipEither :: forall a b. Either a b -> Either b a
 flipEither (Left x) = Right x
@@ -227,7 +227,7 @@ instance semigroupalTraversal :: Semigroupal (LTraversal' a b) where
   zip (LTraversal' l) (LTraversal' m) = LTraversal' { contents, fill }
     where
     contents = bifoldMap l.contents m.contents
-    fill xs = B.bimap (l.fill xs) (m.fill xs)
+    fill xs = bimap (l.fill xs) (m.fill xs)
 
 instance monoidalMonoTraversal :: MonoidalMono (LTraversal' a b) where
   infinite = LTraversal' { contents, fill }
@@ -340,10 +340,16 @@ withered' = lmt2pmt { contents, fill }
   contents = L.fromFoldable <<< map Just
   fill = catMaybes >>> overwriteWitherable
 
-by :: forall p a. Profunctor p => (a -> Boolean) -> Optic' p a (Either a a)
+by :: forall a. (a -> Boolean) -> Iso' a (Either a a)
 by f = dimap (\v -> if f v then Left v else Right v) (either identity identity)
 
-all :: forall t a. Functor t => Foldable t => HeytingAlgebra a => Eq a => Lens' (t a) a
+all ::
+  forall t a.
+  Functor t =>
+  Foldable t =>
+  HeytingAlgebra a =>
+  Eq a =>
+  Lens' (t a) a
 all = lens and (\s b -> if and s == b then s else b <$ s)
 
 overArray :: forall s t a b. Lens s t a b -> Lens (Array s) (Array t) (Array a) (Array b)
@@ -353,3 +359,21 @@ type Getter s a = forall p x. Profunctor p => p a x -> p s x
 
 countBy :: forall f x. Filterable f => Foldable f => (x -> Boolean) -> Getter (f x) Int
 countBy p = lcmap (filter p >>> length)
+
+data Edit s = Change s | Save | Revert
+type Transactional s = { value :: s, modification :: Maybe s }
+
+atomically :: forall s. Lens (Transactional s) (Transactional s) s (Edit s)
+atomically = lens view (flip update)
+  where
+  view { value, modification } = fromMaybe value modification
+  update (Change v)   { value, modification } = { value, modification: Just v }
+  update Revert       { value, modification } = { value, modification: Nothing }
+  update Save       s@{ value, modification } = { value: view s, modification: Nothing }
+
+isDirty :: forall s. Lens' (Transactional s) Boolean
+isDirty = lens view (flip update)
+  where
+  view { modification } = isJust modification
+  update true  { value, modification } = { value, modification: Just $ fromMaybe value modification }
+  update false { value, modification } = { value, modification: Nothing }

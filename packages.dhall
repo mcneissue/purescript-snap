@@ -114,13 +114,16 @@ let mkPackage =
 let upstream =
       https://raw.githubusercontent.com/purescript/package-sets/psc-0.13.0-20190626/src/packages.dhall sha256:9905f07c9c3bd62fb3205e2108515811a89d55cff24f4341652f61ddacfcf148
 
-let overrides = {=}
+let overrides =
+  { effect =
+      upstream.effect // { repo = "https://github.com/masaeedu/purescript-effect.git", version = "semigroup" }
+  }
 
 let additions =
       { record-optics-extra =
           let manifest =
                 https://raw.githubusercontent.com/masaeedu/purescript-record-optics-extra/master/spago.dhall sha256:bba75d2ecde08251b3ae35c647d316bc51bb0aa98a04bd8d58573e77ea55977d
-          
+
           in  mkPackage
               manifest.dependencies
               "https://github.com/masaeedu/purescript-record-optics-extra.git"
