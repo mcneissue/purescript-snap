@@ -18,7 +18,7 @@ import Snap.React.Component as S
 import Snap.SYTC.Component (Cmp, Cmp', (<$>!), (<*>!))
 import Snap.SYTC.Component as C
 import TodoMVC.State (App, Filter(..), Todo, Todos)
-import TodoMVC.State (_dirty, _done, _filter, _hovered, _newTodo, _state, _todos, _value, className, createTodo, defaultNewTodo, shouldHide) as T
+import TodoMVC.State (_dirty, _done, _filter, _hovered, _newTodo, _state, _todos, _value, className, createTodo, defaultNewTodo) as T
 
 -- #### UI
 
@@ -76,8 +76,8 @@ listItem f = li
 -- A list of todos, which can delete themselves from the list
 todos :: Cmp' Effect JSX App
 todos = C.do
-  filter <- C.echo #! T._filter
-  tds    <- (listItem filter <*>! todo) #! T._todos <<< withered'
+  f   <- C.echo #! T._filter
+  tds <- (listItem f <*>! todo) #! T._todos <<< withered'
   C.pure $ R.ul
            |= { className: "todo-list" }
            |- tds
