@@ -6,7 +6,7 @@ import Data.Lens as L
 import Data.Lens.Record (prop)
 import Data.Lens.Record.Extra (extractedBy, remappedBy)
 import Data.Maybe (Maybe(..))
-import Data.Profunctor.Optics (Editable, isEditing)
+import Data.Profunctor.Optics (Transactional, isDirty)
 import Data.Symbol (SProxy(..))
 import Snap.React.Component (InputState)
 
@@ -60,13 +60,13 @@ defaultNewTodo = { focused: true, value: "" }
 initialState :: App
 initialState = { newTodo: defaultNewTodo, todos: [], filter: All }
 
-todoValue :: L.Lens' Todo (Editable String)
+todoValue :: L.Lens' Todo (Transactional String)
 todoValue = remappedBy scheme >>> extractedBy scheme
   where
   scheme = { value: SProxy :: _ "saved", edit: SProxy :: _ "modified" }
 
 editingTodo :: L.Lens' Todo Boolean
-editingTodo = isEditing >>> todoValue
+editingTodo = isDirty >>> todoValue
 
 proxies =
   { done:    SProxy :: _ "done"

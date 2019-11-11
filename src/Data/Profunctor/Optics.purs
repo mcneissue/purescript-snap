@@ -361,18 +361,18 @@ countBy :: forall f x. Filterable f => Foldable f => (x -> Boolean) -> Getter (f
 countBy p = lcmap (filter p >>> length)
 
 data Edit s = Change s | Save | Revert
-type Editable s = { saved :: s, modified :: Maybe s }
+type Transactional s = { saved :: s, modified :: Maybe s }
 
-edited :: forall s. Lens (Editable s) (Editable s) s (Edit s)
-edited = lens view (flip update)
+atomically :: forall s. Lens (Transactional s) (Transactional s) s (Edit s)
+atomically = lens view (flip update)
   where
   view { saved, modified } = fromMaybe saved modified
   update (Change v)   { saved, modified } = { saved, modified: Just v }
   update Revert       { saved, modified } = { saved, modified: Nothing }
   update Save       s@{ saved, modified } = { saved: view s, modified: Nothing }
 
-isEditing :: forall s. Lens' (Editable s) Boolean
-isEditing = lens view (flip update)
+isDirty :: forall s. Lens' (Transactional s) Boolean
+isDirty = lens view (flip update)
   where
   view { modified } = isJust modified
   update true { saved, modified } = { saved, modified: Just $ fromMaybe saved modified }

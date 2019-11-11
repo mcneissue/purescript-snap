@@ -7,7 +7,7 @@ import Data.Lens (_Just)
 import Data.Lens as L
 import Data.Maybe (Maybe(..), isJust)
 import Data.Profunctor as P
-import Data.Profunctor.Optics (all, by, countBy, edited, overArray, partsOf', traversed', withered')
+import Data.Profunctor.Optics (all, by, countBy, overArray, partsOf', traversed', withered')
 import Data.String (trim)
 import Effect (Effect)
 import React.Basic (JSX)
@@ -25,24 +25,23 @@ import TodoMVC.State (App, Filter(..), Todo, Todos, _done, _hovered, _value, _ne
 -- The editor for todo items
 editor :: Cmp' Effect JSX Todo
 editor = C.ado
-  editing <- S.transactionality
-             { change: S.editability
-             , save  : S.enter
-             , revert: S.escape
-             }
-             #! edited >>> todoValue
-  focus <- S.focusability #! editingTodo
+  editing <- S.transacted
+             { change: S.edited
+             , save  : S.enterPressed
+             , revert: S.escapePressed
+             } #! todoValue
+  focus <- S.focused #! editingTodo
   in R.input |~ editing |~ focus $ { className: "edit" }
 
 -- The renderer for todo items. Accepts some conditionally
 -- rendered content that will be shown when hovering the todo
 viewer :: Cmp' Effect (JSX -> JSX) Todo
 viewer = C.ado
-  chk  <- S.checkbox     #! _done
-  txt  <- S.text         #! _value
-  veil <- S.conditional  #! P.lcmap _.hovered
-  ckbl <- S.clickability #! P.rmap (const true) >>> editingTodo
-  hvbl <- S.hoverability #! _hovered
+  chk  <- S.checkbox    #! _done
+  txt  <- S.text        #! _value
+  veil <- S.conditional #! P.lcmap _.hovered
+  ckbl <- S.clicked     #! P.rmap (const true) >>> editingTodo
+  hvbl <- S.hovering    #! _hovered
   in
   \extra ->
     R.div
@@ -95,7 +94,7 @@ allDone = C.ado
 -- The header for the todo list
 header :: Cmp' Effect JSX App
 header = C.ado
-  key <- S.enter # C.handle_ addTodo
+  key <- S.enterPressed # C.handle_ addTodo
   inp <- S.input #! _newTodo
   in R.header
      |= { className: "header" }
@@ -131,9 +130,9 @@ anchor _ s f = a |= { href: url f } |- R.text (show f)
 filters :: Cmp' Effect JSX Filter
 filters = C.ado
   a   <- anchor
-  all <- S.clickability # C.handle_ (const All)
-  act <- S.clickability # C.handle_ (const Active)
-  com <- S.clickability # C.handle_ (const Completed)
+  all <- S.clicked # C.handle_ (const All)
+  act <- S.clicked # C.handle_ (const Active)
+  com <- S.clicked # C.handle_ (const Completed)
   in R.ul
      |= { className: "filters" }
      |< [ R.li |~ all |- a All

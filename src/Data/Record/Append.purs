@@ -13,8 +13,8 @@ import Type.Prelude (class RowToList, RLProxy(..))
 -- @natefaubion in the #purescript room came up with this much simpler implementation of squishy append for records
 -- https://gist.github.com/natefaubion/d2a6f1965fdaa01f0eb49bd753ccaa4a
 
-class AppendRecord r1 r2 r3 | r1 r2 -> r3 where
-  append :: r1 -> r2 -> r3
+class AppendRecord r1 r2 r3 | r1 r2 -> r3, r2 r3 -> r1, r1 r3 -> r2 where
+  append :: { | r1 } -> { | r2 } -> { | r3 }
 
 instance appendRecordImpl ::
   ( Row.Union r1 r2 rx
@@ -23,7 +23,7 @@ instance appendRecordImpl ::
   , Row.Union r3 rx r4
   , Row.Nub r4 r5
   ) =>
-  AppendRecord { | r1 } { | r2 } { | r5 } where
+  AppendRecord r1 r2 r5 where
   append a b =
     Record.nub (Record.union (appendRL (RLProxy :: RLProxy rl) {} a b) (Record.union a b))
 
