@@ -18,7 +18,7 @@ import Snap.React.Component as S
 import Snap.SYTC.Component (Cmp, Cmp', (<$>!), (<*>!))
 import Snap.SYTC.Component as C
 import TodoMVC.State (App, Filter(..), Todo, Todos)
-import TodoMVC.State (_dirty, _done, _filter, _hovered, _newTodo, _state, _todos, _value, createTodo, defaultNewTodo, shouldHide) as T
+import TodoMVC.State (_dirty, _done, _filter, _hovered, _newTodo, _state, _todos, _value, className, createTodo, defaultNewTodo, shouldHide) as T
 
 -- #### UI
 
@@ -26,30 +26,31 @@ import TodoMVC.State (_dirty, _done, _filter, _hovered, _newTodo, _state, _todos
 -- The editor for todo items
 editor :: Cmp' Effect JSX Todo
 editor = C.ado
-  editing <- S.transacted
-             { change: S.edited
-             , save  : S.enterPressed
-             , revert: S.escapePressed
-             } #! T._state
-  focus <- S.focused #! T._dirty
-  in R.input |~ editing |~ focus $ { className: "edit" }
+  editable <- S.transacted
+              { change: S.edited
+              , save  : S.enterPressed
+              , revert: S.escapePressed
+              } #! T._state
+  focusable <- S.focused #! T._dirty
+  in R.input |~ editable |~ focusable $ { className: "edit" }
 
--- The renderer for todo items. Accepts some conditionally
--- rendered content that will be shown when hovering the todo
+-- The renderer for todo items when they're not being edited
+-- Accepts some conditionally rendered content that will be
+-- shown when hovering the todo
 viewer :: Cmp' Effect (JSX -> JSX) Todo
 viewer = C.ado
-  chk  <- S.checkbox    #! T._done
-  txt  <- S.text        #! T._value
-  veil <- S.conditional #! T._hovered
-  ckbl <- S.clicked     #! P.rmap (const true) >>> T._dirty
-  hvbl <- S.hovering    #! T._hovered
+  checkbox  <- S.checkbox    #! T._done
+  text      <- S.text        #! T._value
+  veil      <- S.conditional #! T._hovered
+  clickable <- S.clicked     #! P.rmap (const true) >>> T._dirty
+  hoverable <- S.hovering    #! T._hovered
   in
   \extra ->
     R.div
-    |~ hvbl
+    |~ hoverable
     |= { className: "view" }
-    |< [ chk { className: "toggle" }
-       , R.label |~ ckbl |- txt
+    |< [ checkbox { className: "toggle" }
+       , R.label |~ clickable |- text
        , veil extra
        ]
 
@@ -65,23 +66,21 @@ todo = C.ado
   editor' = const <$>! editor
   editview = C.switch editor' viewer #! by (L.view T._dirty)
 
-listItem :: forall u u'. Cmp Effect (Cmp Effect (JSX -> JSX) (Maybe Todo) u') Filter u
-listItem _ _ _ Nothing  _ = mempty
-listItem _ f _ (Just t) v = R.li |= { className } |- v
+-- An li wrapper around each todo with the appropriate classnames
+listItem :: forall u. Filter -> Cmp Effect (JSX -> JSX) (Maybe Todo) u
+listItem f = li
   where
-  className =
-       (if isJust t.modification then " editing "   else "")
-    <> (if t.done                then " completed " else "")
-    <> (if (T.shouldHide f t)    then " hidden "    else "")
+  li _ Nothing  _ = mempty
+  li _ (Just t) v = R.li |= { className: T.className f t } |- v
 
 -- A list of todos, which can delete themselves from the list
 todos :: Cmp' Effect JSX App
 todos = C.do
-  li  <- listItem       #! T._filter
-  tds <- (li <*>! todo) #! T._todos <<< withered'
+  filter <- C.echo #! T._filter
+  tds    <- (listItem filter <*>! todo) #! T._todos <<< withered'
   C.pure $ R.ul
-     |= { className: "todo-list" }
-     |- tds
+           |= { className: "todo-list" }
+           |- tds
 
 -- A checkbox to control the state of all todo items
 allDone :: Cmp' Effect JSX Todos

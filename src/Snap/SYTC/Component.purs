@@ -129,3 +129,6 @@ when :: forall m v s u. Applicative m => (u -> Boolean) -> Cmp m v s u -> Cmp m 
 when f c set = c set'
   where
   set' u = if f u then set u else P.pure unit
+
+echo :: forall m s u. Cmp m s s u
+echo _ s = s
