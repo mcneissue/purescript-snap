@@ -5,7 +5,7 @@ import Prelude
 import Data.Lens as L
 import Data.Lens.Record (prop)
 import Data.Lens.Record.Extra (extractedBy)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust)
 import Data.Profunctor.Optics (Transactional, isDirty)
 import Data.Symbol (SProxy(..))
 import Snap.React.Component (InputState)
@@ -37,6 +37,12 @@ shouldHide :: Filter -> Todo -> Boolean
 shouldHide All       = const false
 shouldHide Active    = _.done
 shouldHide Completed = not _.done
+
+className :: Filter -> Todo -> String
+className f t =
+     (if isJust t.modification then " editing "   else "")
+  <> (if t.done                then " completed " else "")
+  <> (if (shouldHide f t)    then " hidden "    else "")
 
 type App =
   { newTodo :: InputState
