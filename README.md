@@ -4,6 +4,6 @@ An approach to user interfaces based in denotational design.
 
 ![demo](./demo.gif)
 
-# How to run
+# Running the TodoMVC example
 
-Run: `npm install && spago build && npm run parcel`
+Run: `npm run todomvc`
