@@ -1,4 +1,4 @@
-module TodoMVC.UI where
+module Examples.TodoMVC.UI where
 
 import Prelude hiding (map,apply)
 
@@ -17,8 +17,8 @@ import Snap.React.Component ((|-), (|<), (|=), (|~))
 import Snap.React.Component as S
 import Snap.SYTC.Component (Cmp, Cmp', (<$>!), (<*>!))
 import Snap.SYTC.Component as C
-import TodoMVC.State (App, Filter(..), Todo, Todos)
-import TodoMVC.State (_dirty, _done, _filter, _hovered, _newTodo, _state, _todos, _value, className, createTodo, defaultNewTodo) as T
+import Examples.TodoMVC.State (App, Filter(..), Todo, Todos)
+import Examples.TodoMVC.State (_dirty, _done, _filter, _hovered, _newTodo, _state, _todos, _value, className, createTodo, defaultNewTodo) as T
 
 -- #### UI
 

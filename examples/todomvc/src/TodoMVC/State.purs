@@ -1,4 +1,4 @@
-module TodoMVC.State where
+module Examples.TodoMVC.State where
 
 import Prelude
 

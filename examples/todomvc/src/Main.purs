@@ -1,4 +1,4 @@
-module Main where
+module Examples.TodoMVC.Main where
 
 import Prelude
 
@@ -12,8 +12,8 @@ import Effect.Ref as Ref
 import Snap (snap)
 import Snap.React (reactTarget, refSnapper)
 import Snap.SYTC.Component (contraHoist)
-import TodoMVC.State (initialState)
-import TodoMVC.UI (app)
+import Examples.TodoMVC.State (initialState)
+import Examples.TodoMVC.UI (app)
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)

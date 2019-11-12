@@ -1,9 +1,8 @@
 {
   "scripts": {
-    "bundle": "npm run spago && npm run parcel",
-    "spago": "spago bundle-app --main Main --to bundle/bundle.js",
-    "parcel": "parcel index.html",
-    "pscid:build": "spago build"
+    "build": "spago build",
+    "build:todomvc": "spago bundle-app --main Examples.TodoMVC.Main --to bundle/todomvc/bundle.js",
+    "todomvc": "npm run build:todomvc && parcel examples/todomvc/index.html"
   },
   "dependencies": {
     "react": "^16.8.6",

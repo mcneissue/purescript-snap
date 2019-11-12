@@ -9,5 +9,5 @@
 /.psa*
 /.spago
 /.cache
-/bundle/bundle.js
+/bundle/
 /dist
