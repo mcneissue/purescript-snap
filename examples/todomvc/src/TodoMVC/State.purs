@@ -66,6 +66,16 @@ defaultNewTodo = { focused: true, value: "" }
 initialState :: App
 initialState = { newTodo: defaultNewTodo, todos: [], filter: All }
 
+proxies ::
+  { done         :: SProxy "done"
+  , filter       :: SProxy "filter"
+  , focused      :: SProxy "focused"
+  , hovered      :: SProxy "hovered"
+  , modification :: SProxy "modification"
+  , newTodo      :: SProxy "newTodo"
+  , todos        :: SProxy "todos"
+  , value        :: SProxy "value"
+  }
 proxies =
   { done:         SProxy :: _ "done"
   , hovered:      SProxy :: _ "hovered"
