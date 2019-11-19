@@ -26,13 +26,13 @@ import Examples.TodoMVC.State (_dirty, _done, _filter, _hovered, _newTodo, _stat
 -- The editor for todo items
 editor :: Cmp' Effect JSX Todo
 editor = C.ado
-  editable <- S.transacted
-              { change: S.edited
-              , save  : S.enterPressed
-              , revert: S.escapePressed
-              } #! T._state
-  focusable <- S.focused #! T._dirty
-  in R.input |~ editable |~ focusable $ { className: "edit" }
+  t     <- S.transacted
+           { change: S.edited
+           , save  : S.enterPressed
+           , revert: S.escapePressed
+           } #! T._state
+  focus <- S.focused #! T._dirty
+  in R.input |~ t.change |~ t.save |~ t.revert |~ focus $ { className: "edit" }
 
 -- The renderer for todo items when they're not being edited
 -- Accepts some conditionally rendered content that will be

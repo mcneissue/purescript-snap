@@ -154,16 +154,16 @@ tabPressed = keypressed # C.when ((==) "Tab")
 -- 3. save: an affordance that emits anything
 --
 -- produces an affordance that emits transactional edits of the given value
-transacted :: forall a b c d s m.
-  { revert :: Cmp m (a -> b) s _
-  , save   :: Cmp m (b -> c) s _
-  , change :: Cmp' m (c -> d) s | _ } ->
-  Cmp' m (a -> d) (Transactional s)
+transacted :: forall vr vs vc s m.
+  { revert :: Cmp m vr s _
+  , save   :: Cmp m vs s _
+  , change :: Cmp' m vc s | _ } ->
+  Cmp' m { revert :: vr, save :: vs, change :: vc } (Transactional s)
 transacted { change, save, revert } = atomically $! C.ado
   c <- change #! P.rmap Change
   s <- save   #! P.rmap (const Save)
   r <- revert #! P.rmap (const Revert)
-  in c |~ s |~ r
+  in { change: c, save: s, revert: r }
 
 -- A button that accepts no state and emits unit values
 button :: forall s ri ro x.
