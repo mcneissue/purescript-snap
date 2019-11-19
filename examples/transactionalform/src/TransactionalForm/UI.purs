@@ -4,7 +4,6 @@ import Prelude
 
 import Data.Functor.Variant (SProxy(..))
 import Data.Lens.Record (prop)
-import Data.Profunctor (rmap)
 import Effect (Effect)
 import Examples.TransactionalForm.State (FormData, State)
 import React.Basic (JSX)
