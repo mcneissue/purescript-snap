@@ -5,9 +5,9 @@ import Prelude hiding (map,apply)
 import Data.Array (filter, snoc) as A
 import Data.Lens (_Just)
 import Data.Lens as L
-import Data.Maybe (Maybe(..), isJust)
+import Data.Maybe (Maybe(..))
 import Data.Profunctor as P
-import Data.Profunctor.Optics (all, by, countBy, overArray, partsOf', traversed', withered')
+import Data.Profunctor.Optics (all, by, countBy, partsOf', traversed', withered')
 import Data.String (trim)
 import Effect (Effect)
 import React.Basic (JSX)
