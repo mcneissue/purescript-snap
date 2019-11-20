@@ -1,7 +1,5 @@
 module Examples.TransactionalForm.State where
 
-import Prelude
-
 import Data.Maybe (Maybe(..))
 import Data.Profunctor.Optics (Transactional)
 

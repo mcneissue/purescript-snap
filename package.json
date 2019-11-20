@@ -4,7 +4,9 @@
     "build:todomvc": "spago bundle-app --main Examples.TodoMVC.Main --to bundle/todomvc/bundle.js",
     "todomvc": "npm run build:todomvc && npx parcel examples/todomvc/index.html",
     "build:transactionalform": "spago bundle-app --main Examples.TransactionalForm.Main --to bundle/transactionalform/bundle.js",
-    "transactionalform": "npm run build:transactionalform && npx parcel examples/transactionalform/index.html"
+    "transactionalform": "npm run build:transactionalform && npx parcel examples/transactionalform/index.html",
+    "build:cattron": "spago bundle-app --main Examples.CatTron.Main --to bundle/cattron/bundle.js",
+    "cattron": "npm run build:cattron && npx parcel examples/cattron/index.html"
   },
   "dependencies": {
     "react": "^16.12.0",
