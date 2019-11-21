@@ -22,6 +22,8 @@ You can edit this file as you like.
     , "filterable"
     , "debug"
     , "type-equality"
+    , "affjax"
+    , "argonaut"
     ]
 , packages =
     ./packages.dhall
