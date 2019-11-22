@@ -68,9 +68,14 @@ clicked :: forall s.
   Affordance
     ( onClick :: EffectFn1 SyntheticEvent Unit )
     s Unit
-clicked set _ = flip RO.append { onClick }
+clicked = clicked' unit
+
+clicked' :: forall s u
+          . u 
+         -> Affordance ( onClick :: EffectFn1 SyntheticEvent Unit ) s u
+clicked' u set _ = flip RO.append { onClick }
   where
-  onClick = R.handler_ $ set unit
+  onClick = R.handler_ $ set u
 
 -- Graft a boolean state to whether a particular element is focused
 -- TODO: Make this properly settable (right now we just ignore s)
@@ -170,8 +175,14 @@ button :: forall s ri ro x.
   AppendRecord ri ( onClick :: EffectFn1 SyntheticEvent Unit ) ro =>
   Union ro x Props_button =>
   Cmp Effect ({ | ri } -> R.JSX) s Unit
-button = C.ado
-  c <- clicked
+button = button' unit
+
+button' :: forall s ri ro x u.
+  AppendRecord ri ( onClick :: EffectFn1 SyntheticEvent Unit ) ro =>
+  Union ro x Props_button =>
+  u -> Cmp Effect ({ | ri } -> R.JSX) s u
+button' u = C.ado
+  c <- clicked' u
   in R.button |~ c
 
 -- A text node that displays a string and never emits
