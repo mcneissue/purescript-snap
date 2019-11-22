@@ -3,6 +3,7 @@ module Examples.Reducer.State where
 import Prelude
 
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
 import Effect.Aff (Milliseconds(..), delay, forkAff, Fiber, Aff)
 
 data DelayerAction
@@ -23,6 +24,12 @@ initialState =
   { counter: 0
   , delayer: Just "Click the button to launch a delayed request."
   }
+
+-- TODO: Lenses and Variant
+rootReducer :: Either CounterAction DelayerAction -> State -> Aff State
+rootReducer act s = case act of
+  Left ca  -> pure $ s { counter = counterReducer ca s.counter }
+  Right da -> (\ds -> s { delayer = ds }) <$> delayerReducer da s.delayer
 
 counterReducer :: CounterAction -> Int -> Int
 counterReducer Increment x = x + 1

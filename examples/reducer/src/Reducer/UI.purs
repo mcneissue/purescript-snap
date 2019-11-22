@@ -2,24 +2,22 @@ module Examples.Reducer.UI where
 
 import Prelude
 
-import Data.Lens.Record (prop)
 import Data.Maybe (Maybe, fromMaybe)
-import Data.Symbol (SProxy(..))
+import Data.Either (Either(..))
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
-import Examples.Reducer.State (CounterAction(..), DelayerAction(..), State, counterReducer, delayerReducer)
+import Examples.Reducer.State (CounterAction(..), DelayerAction(..), State)
 import React.Basic (JSX)
 import React.Basic.DOM as R
 import Snap.React.Component ((|<), (|-))
 import Snap.React.Component as RC
-import Snap.SYTC.Component (Cmp, Cmp')
+import Snap.SYTC.Component (Cmp)
 import Snap.SYTC.Component as C
-import Snap.Component ((#!))
 
-app :: Cmp' Aff JSX State
+app :: Cmp Aff JSX State (Either CounterAction DelayerAction)
 app = C.ado
-  cntr <- fromEffCmp $ C.handle counterReducer counter #! prop (SProxy :: SProxy "counter")
-  dlyr <- C.handleM delayerReducer delayer #! prop (SProxy :: SProxy "delayer")
+  cntr <- fromEffCmp $ counter # C.dimap _.counter Left
+  dlyr <- delayer # C.dimap _.delayer Right
   in R.div |< [ cntr, dlyr ]
 
 counter :: Cmp Effect JSX Int CounterAction
