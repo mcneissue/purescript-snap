@@ -24,8 +24,8 @@ app = C.ado
 
 counter :: Cmp Effect JSX Int CounterAction
 counter = C.ado
-  inc <- RC.button' Increment
-  dec <- RC.button' Decrement
+  inc <- RC.button # C.rmap (const Increment)
+  dec <- RC.button # C.rmap (const Decrement)
   txt <- RC.text # C.lcmap show
   in R.div
     |< [ inc |- R.text "+"
@@ -37,7 +37,7 @@ delayer :: Cmp Aff JSX (Maybe String) DelayerAction
 delayer put = go put
   where
     go = C.ado
-      load <- fromEffCmp $ RC.button' $ Load put
+      load <- fromEffCmp $ RC.button # C.rmap (const $ Load put)
       txt  <- RC.text # C.lcmap (fromMaybe "Loading...")
       in R.div
         |< [ load |- R.text "Click Me"
