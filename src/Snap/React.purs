@@ -14,11 +14,16 @@ import React.Basic.DOM (render) as R
 import React.Basic (JSX) as R
 
 refSnapper :: forall s m. MonadAff m => Ref s -> AVar Unit -> Snapper m s s
-refSnapper ref sync = { get, put }
+refSnapper = refSnapper' (\s _ -> pure s)
+
+refSnapper' :: forall s u m. MonadAff m => (u -> s -> m s) -> Ref s -> AVar Unit -> Snapper m s u
+refSnapper' reducer ref sync = { get, put }
   where
   get = liftEffect $ Ref.read ref
-  put s = do
-    liftEffect $ Ref.write s ref
+  put u = do
+    s  <- get
+    s' <- reducer u s
+    liftEffect $ Ref.write s' ref
     _ <- liftAff $ AVar.put unit sync
     pure unit
 
