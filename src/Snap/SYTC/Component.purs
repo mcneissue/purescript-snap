@@ -121,12 +121,6 @@ composeFlipped = flip compose
 
 infixr 9 composeFlipped as >>>!
 
-handleM :: forall m v s u. Monad m => (u -> s -> m s) -> Cmp m v s u -> Cmp' m v s
-handleM f c set s = c (flip f s >=> set) s
-
-handleM_ :: forall m v s u. Monad m => (s -> m s) -> Cmp m v s u -> Cmp' m v s
-handleM_ f = handleM (const f)
-
 handle :: forall m v s u. (u -> s -> s) -> Cmp m v s u -> Cmp' m v s
 handle f c set s = c (flip f s >>> set) s
 
