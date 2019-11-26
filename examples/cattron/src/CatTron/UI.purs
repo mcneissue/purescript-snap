@@ -38,8 +38,8 @@ component = C.ado
   in R.div |<
      [ R.h1 |<
        [ R.text "CatTron 9000 Cat Gif Viewing Device" ]
-     , R.div |- v
      , R.div |- r
+     , R.div |- v
      ]
 
 app :: Cmp' Effect (Aff JSX) State
