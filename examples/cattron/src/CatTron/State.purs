@@ -9,10 +9,10 @@ import Data.Argonaut (Json, decodeJson, (.:))
 import Data.Either (Either(..), either)
 import Effect.Aff (Aff)
 
-data State = Start | Loading | Error String | Gif String
+data State = Loading | Error String | Gif String
 
 initialState :: State
-initialState = Start
+initialState = Loading
 
 topic :: String
 topic = "cats"

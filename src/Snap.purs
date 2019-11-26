@@ -2,9 +2,13 @@ module Snap where
 
 import Prelude
 
+import Data.Functor.Contravariant (class Contravariant, cmap)
 import Snap.SYTC.Component (Cmp)
 
 newtype Target m v = Target (v -> m (Target m v))
+
+instance contravariantTarget :: Functor m => Contravariant (Target m) where
+  cmap f (Target a) = Target \v -> cmap f <$> a (f v)
 
 type Snapper m s u = { put :: u -> m Unit, get :: m s }
 
