@@ -14,6 +14,8 @@ data CounterAction
   = Increment
   | Decrement
 
+type Action = Either CounterAction DelayerAction
+
 type State =
   { counter :: Int
   , delayer :: Maybe String
@@ -26,7 +28,7 @@ initialState =
   }
 
 -- TODO: Lenses and Variant
-rootReducer :: Either CounterAction DelayerAction -> State -> Aff State
+rootReducer :: Action -> State -> Aff State
 rootReducer act s = case act of
   Left ca  -> pure $ s { counter = counterReducer ca s.counter }
   Right da -> (\ds -> s { delayer = ds }) <$> delayerReducer da s.delayer

@@ -2,18 +2,18 @@ module Examples.Routing.Main where
 
 import Prelude
 
-import Data.Maybe (maybe)
+import Data.Maybe (maybe, Maybe(..))
 import Effect (Effect)
-import Effect.Aff (error, launchAff_)
+import Effect.Aff (error, forkAff, launchAff_)
 import Effect.Aff.AVar as AVar
 import Effect.Class (liftEffect)
 import Effect.Exception (throwException)
 import Effect.Ref as Ref
-import Snap (snap)
-import Snap.React (reactTarget, refSnapper)
-import Snap.SYTC.Component (contraHoist)
-import Examples.Routing.State (initialState)
+import Examples.Routing.Router as Router
+import Examples.Routing.State (Action(..), initialState, reducer)
 import Examples.Routing.UI (app)
+import Snap (snap)
+import Snap.React (reactTargetM, refSnapper')
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -34,7 +34,8 @@ main = do
   launchAff_ $ do
     av  <- AVar.empty
     -- Create the state manager and target from the resources above
-    let snapper = refSnapper ref av
-    let target = reactTarget e av
+    let snapper = refSnapper' reducer ref av
+    let target = reactTargetM e av
     -- Snap everything together
-    snap snapper (contraHoist launchAff_ $ app) target
+    _ <- Router.mkRouter \mr r -> when (mr /= Just r) $ snapper.put $ Navigate r
+    snap snapper app target
