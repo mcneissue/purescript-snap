@@ -11,6 +11,8 @@ import Effect.Aff (Aff)
 
 data State = Loading | Error String | Gif String
 
+derive instance eqState :: Eq State
+
 initialState :: State
 initialState = Loading
 

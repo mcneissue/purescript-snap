@@ -5,7 +5,7 @@ import Prelude
 import Data.Either (either)
 import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
-import Effect.Aff (delay, launchAff_, Aff)
+import Effect.Aff (Aff, delay, forkAff)
 import Effect.Class (liftEffect)
 import Examples.CatTron.State (State(..), randomGifUrl)
 import React.Basic (JSX)
@@ -15,12 +15,11 @@ import Snap.React.Component ((|-), (|<), (|=))
 import Snap.SYTC.Component (Cmp', Cmp)
 import Snap.SYTC.Component as C
 
-loadGif :: (State -> Effect Unit) -> Aff Unit
-loadGif set = do
-  liftEffect $ set Loading
+loadGif :: Aff State
+loadGif = do
   delay $ Milliseconds $ 1000.0
   result <- randomGifUrl
-  liftEffect $ set $ either Error Gif result
+  pure $ either Error Gif result
 
 reload :: forall s. Cmp Effect JSX s State
 reload set _ = R.button |= { onClick } |- R.text "MOAR"
@@ -44,6 +43,8 @@ component = C.ado
      ]
 
 app :: Cmp' Effect (Aff JSX) State
-app set s = case s of
-  Loading -> loadGif set $> component set s
-  _ -> pure $ component set s
+app set s = do
+  when (s == Loading) load
+  pure $ component set s
+  where
+  load = void $ forkAff $ loadGif >>= set >>> liftEffect
