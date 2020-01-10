@@ -7,11 +7,17 @@ import Affjax as AX
 import Affjax.ResponseFormat (json)
 import Data.Argonaut (Json, decodeJson, (.:))
 import Data.Either (Either(..), either)
+import Data.Generic.Rep (class Generic)
+import Data.Generic.Rep.Show (genericShow)
 import Effect.Aff (Aff)
 
 data State = Loading | Error String | Gif String
 
 derive instance eqState :: Eq State
+derive instance genericState :: Generic State _
+
+instance showState :: Show State where
+  show = genericShow
 
 initialState :: State
 initialState = Loading

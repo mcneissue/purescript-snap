@@ -8,7 +8,9 @@
     "build:cattron": "spago bundle-app --main Examples.CatTron.Main --to bundle/cattron/bundle.js",
     "cattron": "npm run build:cattron && npx parcel examples/cattron/index.html",
     "build:reducer": "spago bundle-app --main Examples.Reducer.Main --to bundle/reducer/bundle.js",
-    "reducer": "npm run build:reducer && npx parcel examples/reducer/index.html"
+    "reducer": "npm run build:reducer && npx parcel examples/reducer/index.html",
+    "build:routing": "spago bundle-app --main Examples.Routing.Main --to bundle/routing/bundle.js",
+    "routing": "npm run build:routing && npx parcel examples/routing/index.html"
   },
   "dependencies": {
     "react": "^16.12.0",

@@ -24,6 +24,8 @@ You can edit this file as you like.
     , "type-equality"
     , "affjax"
     , "argonaut"
+    , "routing-duplex"
+    , "routing"
     ]
 , packages =
     ./packages.dhall
