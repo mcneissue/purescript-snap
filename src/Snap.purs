@@ -15,14 +15,14 @@ newtype Target m v = Target (v -> m (Target m v))
 instance contravariantTarget :: Functor m => Contravariant (Target m) where
   cmap f (Target a) = Target \v -> cmap f <$> a (f v)
 
-snap :: forall m v
+snap :: forall m v x
       . Monad m
      => Cmp m v Unit Void
      -> Target m v
-     -> m Unit
+     -> m x
 snap cmp t = loop t
   where
+  v = cmp absurd unit
   loop (Target render) = do
-    let v = cmp absurd unit
     t' <- render v
     loop t'
