@@ -9,11 +9,11 @@ import Effect.Aff.AVar as AVar
 import Effect.Class (liftEffect)
 import Effect.Exception (throwException)
 import Effect.Ref as Ref
-import Snap (snap)
-import Snap.React (reactTargetM, refSnapper)
-import Snap.SYTC.Component (contraHoist)
 import Examples.CatTron.State (initialState)
 import Examples.CatTron.UI (app)
+import Snap (encapsulate, snap)
+import Snap.React (reactTargetM, refSnapper)
+import Snap.SYTC.Component (contraHoist, map)
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -37,4 +37,4 @@ main = do
     let snapper = refSnapper ref av
     let target = reactTargetM e av
     -- Snap everything together
-    snap snapper (contraHoist launchAff_ $ app) target
+    snap (map join $ encapsulate snapper $ contraHoist launchAff_ $ app) target
