@@ -14,7 +14,7 @@ import Examples.Routing.State (Action(..), initialState, reducer)
 import Examples.Routing.UI (app)
 import Snap (encapsulate, snap)
 import Snap.React (reactTargetM, refSnapper')
-import Snap.SYTC.Component (map)
+import Snap.SYTC.Component (map) as C
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -39,4 +39,4 @@ main = do
     let target = reactTargetM e av
     -- Snap everything together
     _ <- Router.mkRouter \mr r -> when (mr /= Just r) $ snapper.put $ Navigate r
-    snap (map join $ encapsulate snapper app) target
+    snap (C.map join $ encapsulate snapper app) target

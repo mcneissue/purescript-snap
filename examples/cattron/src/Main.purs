@@ -13,7 +13,7 @@ import Examples.CatTron.State (initialState)
 import Examples.CatTron.UI (app)
 import Snap (encapsulate, snap)
 import Snap.React (reactTargetM, refSnapper)
-import Snap.SYTC.Component (contraHoist, map)
+import Snap.SYTC.Component (contraHoist, map) as C
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -37,4 +37,4 @@ main = do
     let snapper = refSnapper ref av
     let target = reactTargetM e av
     -- Snap everything together
-    snap (map join $ encapsulate snapper $ contraHoist launchAff_ $ app) target
+    snap (C.map join $ encapsulate snapper $ C.contraHoist launchAff_ $ app) target
