@@ -46,7 +46,7 @@ mkRouter f = liftEffect $ matchesWith parse handle
   handle mr r = do
     logShow r
     launchAff_ $ f mr r
-  
+
   parse s = case RD.parse parser s of
     Left EndOfPath -> Right Root
     Left e -> Left e

@@ -39,6 +39,6 @@ app put s = case s of
   CatTron x -> handleEffCmp put CatTron.app CatTron x
   Reducer x -> pure $ Reducer.app (put <<< ReducerAction) x
   Transactional x -> pure $ handleEffCmp put Transactional.app Transactional x
-    
+
 handleEffCmp :: forall u s v. (Action -> Aff Unit) -> Cmp Effect v s u -> (u -> RouteState) -> s -> v
 handleEffCmp put cmp st x = contraHoist launchAff_ cmp (put <<< Update <<< st) x
