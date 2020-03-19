@@ -12,8 +12,8 @@ import React.Basic (JSX)
 import React.Basic.DOM as R
 import React.Basic.Events (handler_)
 import Snap.React.Component ((|-), (|<), (|=))
-import Snap.SYTC.Component (Cmp', Cmp)
-import Snap.SYTC.Component as C
+import Snap.Component.SYTC (Cmp', Cmp)
+import Snap.Component.SYTC as C
 
 loadGif :: Aff State
 loadGif = do

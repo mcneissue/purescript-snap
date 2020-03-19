@@ -15,8 +15,8 @@ import React.Basic.DOM (a, div, footer, h1, header, label, li, section, span, st
 import Snap.Component ((#!))
 import Snap.React.Component ((|-), (|<), (|=), (|~))
 import Snap.React.Component as S
-import Snap.SYTC.Component (Cmp, Cmp', (<$>!), (<*>!))
-import Snap.SYTC.Component as C
+import Snap.Component.SYTC (Cmp, Cmp', (<$>!), (<*>!))
+import Snap.Component.SYTC as C
 import Examples.TodoMVC.State (App, Filter(..), Todo, Todos)
 import Examples.TodoMVC.State (_dirty, _done, _filter, _hovered, _newTodo, _state, _todos, _value, className, createTodo, defaultNewTodo) as T
 

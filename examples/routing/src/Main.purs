@@ -14,7 +14,7 @@ import Examples.Routing.State (Action(..), initialState, reducer)
 import Examples.Routing.UI (app)
 import Snap (encapsulate, snap)
 import Snap.React (reactTargetM, refSnapper')
-import Snap.SYTC.Component (map) as C
+import Snap.Component.SYTC (map) as C
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)

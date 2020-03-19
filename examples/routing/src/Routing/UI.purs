@@ -19,7 +19,7 @@ import Examples.TransactionalForm.UI as Transactional
 import React.Basic (JSX)
 import React.Basic.DOM as R
 import Snap.React.Component ((|-), (|<), (|=), (|~))
-import Snap.SYTC.Component (Cmp, contraHoist)
+import Snap.Component.SYTC (Cmp, contraHoist)
 
 links :: JSX
 links = R.ul |< map toLink ls

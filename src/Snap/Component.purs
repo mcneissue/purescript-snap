@@ -8,8 +8,8 @@ import Data.Profunctor.Choice (class Choice)
 import Data.Profunctor.Lazy (class Lazy2)
 import Data.Profunctor.Monoidal (class Comonoidal, class ComonoidalMono, class Cosemigroupal, class CosemigroupalMono, class MonoidalMono, class SemigroupalMono, switch)
 import Data.Profunctor.Strong (class Strong)
-import Snap.SYTC.Component (Cmp)
-import Snap.SYTC.Component as C
+import Snap.Component.SYTC (Cmp)
+import Snap.Component.SYTC as C
 
 -- Profunctor wrapper
 newtype PComponent m v s u

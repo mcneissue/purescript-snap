@@ -11,8 +11,8 @@ import React.Basic (JSX)
 import React.Basic.DOM as R
 import Snap.React.Component ((|<), (|-))
 import Snap.React.Component as RC
-import Snap.SYTC.Component (Cmp)
-import Snap.SYTC.Component as C
+import Snap.Component.SYTC (Cmp)
+import Snap.Component.SYTC as C
 
 app :: Cmp Aff JSX State (Either CounterAction DelayerAction)
 app = C.ado

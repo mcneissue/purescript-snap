@@ -1,4 +1,4 @@
-module Snap.SYTC.Component where
+module Snap.Component.SYTC where
 
 import Control.Applicative (class Applicative)
 import Control.Apply (lift2) as A

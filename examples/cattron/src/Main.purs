@@ -13,7 +13,7 @@ import Examples.CatTron.State (initialState)
 import Examples.CatTron.UI (app)
 import Snap (encapsulate, snap)
 import Snap.React (reactTargetM, refSnapper)
-import Snap.SYTC.Component (contraHoist, map) as C
+import Snap.Component.SYTC (contraHoist, map) as C
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)

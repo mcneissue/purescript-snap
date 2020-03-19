@@ -3,7 +3,7 @@ module Snap where
 import Prelude
 
 import Data.Functor.Contravariant (class Contravariant, cmap)
-import Snap.SYTC.Component (Cmp)
+import Snap.Component.SYTC (Cmp)
 
 type Snapper m s u = { put :: u -> m Unit, get :: m s }
 
