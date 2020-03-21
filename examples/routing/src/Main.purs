@@ -13,8 +13,9 @@ import Examples.Routing.Router as Router
 import Examples.Routing.State (Action(..), initialState, reducer)
 import Examples.Routing.UI (app)
 import Snap (encapsulate, snap)
-import Snap.React (reactTargetM, refSnapper')
 import Snap.Component.SYTC (map) as C
+import Snap.React (reactTargetM, refSnapper')
+import Snap.Snapper (Snapper(..))
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -35,8 +36,8 @@ main = do
   launchAff_ $ do
     av  <- AVar.empty
     -- Create the state manager and target from the resources above
-    let snapper = refSnapper' reducer ref av
+    let (Snapper snapper) = refSnapper' reducer ref av
     let target = reactTargetM e av
     -- Snap everything together
     _ <- Router.mkRouter \mr r -> when (mr /= Just r) $ snapper.put $ Navigate r
-    snap (C.map join $ encapsulate snapper app) target
+    snap (C.map join $ encapsulate (Snapper snapper) app) target

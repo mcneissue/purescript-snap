@@ -4,11 +4,10 @@ import Prelude
 
 import Data.Functor.Contravariant (class Contravariant, cmap)
 import Snap.Component.SYTC (Cmp)
+import Snap.Snapper (Snapper(..))
 
-type Snapper m s u = { put :: u -> m Unit, get :: m s }
-
-encapsulate :: forall m v s u. Monad m => Snapper m s u -> Cmp m v s u -> Cmp m (m v) Unit Void
-encapsulate { get, put } cmp _ _ = get <#> cmp put
+encapsulate :: forall m v s u. Monad m => Snapper m u s -> Cmp m v s u -> Cmp m (m v) Unit Void
+encapsulate (Snapper { get, put }) cmp _ _ = get <#> cmp put
 
 newtype Target m v = Target (v -> m (Target m v))
 

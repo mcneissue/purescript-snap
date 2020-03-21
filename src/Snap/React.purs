@@ -3,6 +3,7 @@ module Snap.React where
 import Prelude
 
 import Data.Functor.Contravariant (cmap)
+import Effect (Effect)
 import Effect.Aff.AVar (AVar)
 import Effect.Aff.AVar as AVar
 import Effect.Aff.Class (class MonadAff, liftAff)
@@ -11,14 +12,16 @@ import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import React.Basic (JSX) as R
 import React.Basic.DOM (render) as R
-import Snap (Snapper, Target(..))
+import Routing.Hash (getHash, setHash)
+import Snap (Target(..))
+import Snap.Snapper (Snapper(..), Snapper')
 import Web.DOM (Element)
 
 refSnapper :: forall s m. MonadAff m => Ref s -> AVar Unit -> Snapper m s s
 refSnapper = refSnapper' (\s _ -> pure s)
 
-refSnapper' :: forall s u m. MonadAff m => (u -> s -> m s) -> Ref s -> AVar Unit -> Snapper m s u
-refSnapper' reducer ref sync = { get, put }
+refSnapper' :: forall s u m. MonadAff m => (u -> s -> m s) -> Ref s -> AVar Unit -> Snapper m u s
+refSnapper' reducer ref sync = Snapper { get, put }
   where
   get = liftEffect $ Ref.read ref
   put u = do
@@ -39,3 +42,6 @@ reactTargetM e sync = Target go
     liftEffect $ R.render v' e
     _ <- liftAff $ AVar.take sync
     pure (Target go)
+
+url :: Snapper' Effect String
+url = Snapper { get: getHash, put: setHash }
