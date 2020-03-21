@@ -13,8 +13,8 @@
     "routing": "npm run build:routing && npx parcel examples/routing/index.html"
   },
   "dependencies": {
-    "react": "^16.12.0",
-    "react-dom": "^16.12.0",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
     "todomvc-app-css": "^2.3.0",
     "todomvc-common": "^1.0.5"
   },
