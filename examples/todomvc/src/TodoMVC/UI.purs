@@ -3,22 +3,26 @@ module Examples.TodoMVC.UI where
 import Prelude hiding (map,apply)
 
 import Data.Array (filter, snoc) as A
-import Data.Lens (_Just)
+import Data.Array (mapWithIndex)
+import Data.Compactable (compact)
+import Data.FoldableWithIndex (foldMapWithIndex)
+import Data.Lens (_Just, traversed)
 import Data.Lens as L
 import Data.Maybe (Maybe(..))
+import Data.Newtype (unwrap)
 import Data.Profunctor as P
-import Data.Profunctor.Optics (all, by, countBy, partsOf', traversed', withered')
+import Data.Profunctor.Optics (all, by, countBy, partsOf)
 import Data.String (trim)
 import Effect (Effect)
-import React.Basic (JSX)
-import React.Basic.DOM (a, div, footer, h1, header, label, li, section, span, strong, text, ul, input) as R
-import Snap.Component ((#!))
-import Snap.React.Component ((|-), (|<), (|=), (|~))
-import Snap.React.Component as S
-import Snap.Component.SYTC (Cmp, Cmp', (<$>!), (<*>!))
-import Snap.Component.SYTC as C
 import Examples.TodoMVC.State (App, Filter(..), Todo, Todos)
 import Examples.TodoMVC.State (_dirty, _done, _filter, _hovered, _newTodo, _state, _todos, _value, className, createTodo, defaultNewTodo) as T
+import React.Basic (JSX)
+import React.Basic.DOM (a, div, footer, h1, header, label, li, section, span, strong, text, ul, input) as R
+import Snap.Component (PComponent(..), (#!))
+import Snap.Component.SYTC (Cmp, Cmp', (<$>!), (<*>!))
+import Snap.Component.SYTC as C
+import Snap.React.Component ((|-), (|<), (|=), (|~))
+import Snap.React.Component as S
 
 -- #### UI
 
@@ -73,11 +77,18 @@ listItem f = li
   li _ Nothing  _ = mempty
   li _ (Just t) v = R.li |= { className: T.className f t } |- v
 
+-- Given a component focusing on whether a component is visible
+withered :: forall m v x. Monoid v => Cmp' m v (Maybe x) -> Cmp' m v (Array x)
+withered cmp u s = foldMapWithIndex (\k mt -> cmp (go k) mt) (Just <$> s)
+  where
+  go k Nothing  = u $ compact $ mapWithIndex (\i x -> if k == i then Nothing else Just x) s
+  go k (Just t) = u $ mapWithIndex (\i x -> if k == i then t else x) s
+
 -- A list of todos, which can delete themselves from the list
 todos :: Cmp' Effect JSX App
 todos = C.do
   f   <- C.echo #! T._filter
-  tds <- (listItem f <*>! todo) #! T._todos <<< withered'
+  tds <- (listItem f <*>! todo) #! T._todos <<< P.dimap unwrap PComponent withered
   C.pure $ R.ul
            |= { className: "todo-list" }
            |- tds
@@ -85,7 +96,7 @@ todos = C.do
 -- A checkbox to control the state of all todo items
 allDone :: Cmp' Effect JSX Todos
 allDone = C.ado
-  chk <- S.checkbox #! all >>> partsOf' (traversed' <<< T._done)
+  chk <- S.checkbox #! all >>> partsOf (traversed <<< T._done)
   in chk { id: "toggle-all", className: "toggle-all" }
      <> R.label
         |= { htmlFor: "toggle-all" }

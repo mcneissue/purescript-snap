@@ -2,15 +2,11 @@ module Snap.Component.SYTC where
 
 import Control.Applicative (class Applicative)
 import Control.Apply (lift2) as A
-import Control.Bind ((<=<), (>=>))
 import Control.Category (class Category, class Semigroupoid, (<<<), (>>>))
-import Control.Monad (class Monad)
-import Data.Bifunctor (bimap)
 import Data.Either (Either(..), either)
 import Data.Functor.Compose (Compose(..))
 import Data.Monoid.Endo (Endo(..))
 import Data.Newtype (un)
-import Data.Profunctor.Optics (flipEither)
 import Data.Tuple (Tuple(..), curry, fst, snd, swap, uncurry)
 import Prelude (Unit, unit, class Semigroup, class Monoid, (<>), ($), (>>=), flip, const, Void, absurd)
 import Prelude as P
@@ -50,6 +46,10 @@ left cmp set = either (cmp $ set <<< Left) (const P.mempty)
 
 right :: forall m v s u c. Monoid v => Cmp m v s u -> Cmp m v (Either c s) (Either c u)
 right = dimap flipEither flipEither <<< left
+  where
+  flipEither :: forall a b. Either a b -> Either b a
+  flipEither (Left x) = Right x
+  flipEither (Right x) = Left x
 
 switch :: forall m v a b c d. Cmp m v a b -> Cmp m v c d -> Cmp m v (Either a c) (Either b d)
 switch f g set = either (f $ set <<< Left) (g $ set <<< Right)
@@ -57,10 +57,10 @@ switch f g set = either (f $ set <<< Left) (g $ set <<< Right)
 never :: forall m v. Cmp' m v Void
 never = const absurd
 
-zip :: forall m v s s' u u'. Semigroup v => Monoid u => Monoid u' => Cmp m v s u -> Cmp m v s' u' -> Cmp m v (Tuple s s') (Tuple u u')
-zip c c' set (Tuple s s') = c (set <<< flip Tuple P.mempty) s <> c' (set <<< Tuple P.mempty) s'
+zip :: forall m v s s' u u'. Semigroup v => Cmp m v s u -> Cmp m v s' u' -> Cmp m v (Tuple s s') (Either u u')
+zip c c' set (Tuple s s') = c (set <<< Left) s <> c' (set <<< Right) s'
 
-infinite :: forall m v. Monoid v => Cmp' m v Unit
+infinite :: forall m v s u. Monoid v => Cmp m v s u
 infinite = mempty
 
 toEndo :: forall a. a -> Endo Function a
@@ -68,12 +68,6 @@ toEndo = Endo <<< const
 
 runEndo :: forall a. Endo Function a -> (a -> a)
 runEndo (Endo f) = f
-
-zipMono :: forall m v s s'. Semigroup v => Cmp' m v s -> Cmp' m v s' -> Cmp' m v (Tuple s s')
-zipMono c c' set v@(Tuple s s') = zip' set' v
-  where
-  zip' = uncurry zip $ bimap (rmap toEndo) (rmap toEndo) (Tuple c c')
-  set' = set <<< bimap ((_ $ s) <<< runEndo) ((_ $ s') <<< runEndo)
 
 contraHoist :: forall v s u m n. (n Unit -> m Unit) -> Cmp m v s u -> Cmp n v s u
 contraHoist f cmp set s = cmp (f <<< set) s
