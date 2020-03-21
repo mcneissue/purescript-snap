@@ -71,3 +71,11 @@ instance alternativeSnapper :: Alternative m => Alternative (Snapper m u)
 instance monadZeroSnapper :: MonadZero m => MonadZero (Snapper m u)
 
 instance monadPlusSnapper :: MonadPlus m => MonadPlus (Snapper m u)
+
+reduced :: forall m u s. Bind m => (u -> s -> m s) -> Snapper' m s -> Snapper m u s
+reduced red (Snapper { get, put }) = Snapper { get: get, put: put' }
+  where
+  put' u = do
+    s <- get
+    s' <- red u s
+    put s'

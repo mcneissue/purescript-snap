@@ -12,7 +12,8 @@ import Effect.Ref as Ref
 import Examples.Reducer.State (initialState, rootReducer)
 import Examples.Reducer.UI (app)
 import Snap (encapsulate, snap)
-import Snap.React (reactTargetM, refSnapper')
+import Snap.React (reactTargetM, refSnapper)
+import Snap.Snapper (reduced)
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -33,7 +34,7 @@ main = do
   launchAff_ $ do
     av  <- AVar.empty
     -- Create the state manager and target from the resources above
-    let snapper = refSnapper' rootReducer ref av
+    let snapper = reduced rootReducer $ refSnapper ref av
     let target = reactTargetM e av
     -- Snap everything together
     snap (encapsulate snapper app) target
