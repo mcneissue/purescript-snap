@@ -2,23 +2,19 @@ module Examples.Routing.UI where
 
 import Prelude
 
-import Data.Foldable (foldMap)
-import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Aff (Aff, forkAff, launchAff_)
-import Effect.Class (liftEffect)
-import Effect.Class.Console (logShow)
+import Effect.Aff (Aff, launchAff_)
 import Examples.CatTron.UI as CatTron
 import Examples.Reducer.UI as Reducer
-import Examples.Routing.Router (mkRouter, urlFor)
+import Examples.Routing.Router (urlFor)
 import Examples.Routing.Router as Router
 import Examples.Routing.State (Action(..), RouteState(..), State)
 import Examples.TodoMVC.UI as TodoMvc
 import Examples.TransactionalForm.UI as Transactional
 import React.Basic (JSX)
 import React.Basic.DOM as R
-import Snap.React.Component ((|-), (|<), (|=), (|~))
+import Snap.React.Component ((|-), (|<), (|=))
 import Snap.Component.SYTC (Cmp, contraHoist)
 
 links :: JSX
