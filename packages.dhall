@@ -122,6 +122,13 @@ let overrides =
               , version =
                   "semigroup"
               }
+      , profunctor = 
+              upstream.profunctor
+          //  { repo =
+                  "https://github.com/masaeedu/purescript-profunctor.git"
+              , version =
+                  "ae2d571615ee4e9e1f29248fb489e89c8faca592"
+              }
       }
 
 let additions =
