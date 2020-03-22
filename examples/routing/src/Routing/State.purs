@@ -4,6 +4,8 @@ import Prelude
 
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Data.Lens (Prism', prism')
+import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
 import Effect.Class.Console (log)
 import Examples.CatTron.State as CatTron
@@ -18,6 +20,40 @@ data RouteState
   | CatTron CatTron.State
   | Reducer Reducer.State
   | Transactional Transactional.State
+
+_root :: Prism' RouteState Unit
+_root = prism' (const Root) go
+  where
+  go Root = Just unit
+  go _    = Nothing
+
+_todomvc :: Prism' RouteState TodoMvc.App
+_todomvc = prism'
+  TodoMvc
+  (case _ of
+    TodoMvc x -> Just x
+    _ -> Nothing)
+
+_cattron :: Prism' RouteState CatTron.State
+_cattron = prism'
+  CatTron
+  (case _ of
+    CatTron x -> Just x
+    _ -> Nothing)
+
+_reducer :: Prism' RouteState Reducer.State
+_reducer = prism'
+  Reducer
+  (case _ of
+    Reducer x -> Just x
+    _ -> Nothing)
+
+_transactional :: Prism' RouteState Transactional.State
+_transactional = prism'
+  Transactional
+  (case _ of
+    Transactional x -> Just x
+    _ -> Nothing)
 
 derive instance genericRouteState :: Generic RouteState _
 

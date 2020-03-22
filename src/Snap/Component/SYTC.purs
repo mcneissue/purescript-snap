@@ -5,6 +5,7 @@ import Control.Apply (lift2) as A
 import Control.Category (class Category, class Semigroupoid, (<<<), (>>>))
 import Data.Either (Either(..), either)
 import Data.Functor.Compose (Compose(..))
+import Data.Maybe (Maybe(..))
 import Data.Monoid.Endo (Endo(..))
 import Data.Newtype (un)
 import Data.Tuple (Tuple(..), curry, fst, snd, swap, uncurry)
@@ -128,3 +129,8 @@ when f c set = c set'
 
 echo :: forall m s u. Cmp m s s u
 echo _ s = s
+
+lcmapMaybe :: forall m v s s' u. Monoid v => (s -> Maybe s') -> Cmp m v s' u -> Cmp m v s u
+lcmapMaybe p cmp put s = case p s of
+  Nothing -> P.mempty
+  Just s' -> cmp put s'
