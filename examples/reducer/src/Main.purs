@@ -35,6 +35,7 @@ main = do
     av  <- AVar.empty
     -- Create the state manager and target from the resources above
     let snapper = reduced rootReducer $ refSnapper ref av
+    let cmp = encapsulate snapper app
     let target = reactTargetM e av
     -- Snap everything together
-    snap (encapsulate snapper app) target
+    snap cmp target

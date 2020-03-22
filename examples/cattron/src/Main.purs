@@ -35,6 +35,7 @@ main = do
     av  <- AVar.empty
     -- Create the state manager and target from the resources above
     let snapper = refSnapper ref av
+    let cmp = C.map join $ encapsulate snapper $ C.contraHoist launchAff_ $ app
     let target = reactTargetM e av
     -- Snap everything together
-    snap (C.map join $ encapsulate snapper $ C.contraHoist launchAff_ $ app) target
+    snap cmp target

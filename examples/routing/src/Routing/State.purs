@@ -28,7 +28,7 @@ type State = RouteState
 
 data Action
   = Navigate Router.Route
-  | Update RouteState -- Handle updates for non-reducer components
+  | Update RouteState            -- Handle updates for non-reducer components
   | ReducerAction Reducer.Action -- Handle updates for the Reducers examples
 
 initialState :: State

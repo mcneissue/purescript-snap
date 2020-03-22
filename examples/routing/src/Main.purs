@@ -36,8 +36,10 @@ main = do
   launchAff_ $ do
     av  <- AVar.empty
     -- Create the state manager and target from the resources above
-    let (Snapper snapper) = reduced reducer $ refSnapper ref av
+    let snapper = reduced reducer $ refSnapper ref av
+    let (Snapper snapper') = snapper
+    let cmp = C.map join $ encapsulate snapper app
     let target = reactTargetM e av
     -- Snap everything together
-    _ <- Router.mkRouter \mr r -> when (mr /= Just r) $ snapper.put $ Navigate r
-    snap (C.map join $ encapsulate (Snapper snapper) app) target
+    _ <- Router.mkRouter \mr r -> when (mr /= Just r) $ snapper'.put $ Navigate r
+    snap cmp target

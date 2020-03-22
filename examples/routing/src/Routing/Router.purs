@@ -17,8 +17,8 @@ import Routing.Duplex.Generic.Syntax ((/))
 import Routing.Duplex.Parser (RouteError(..))
 import Routing.Hash (matchesWith)
 
-data Route 
-  = Root 
+data Route
+  = Root
   | CatTron
   | Reducer
   | TodoMvc

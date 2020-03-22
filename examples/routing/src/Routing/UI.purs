@@ -14,8 +14,9 @@ import Examples.TodoMVC.UI as TodoMvc
 import Examples.TransactionalForm.UI as Transactional
 import React.Basic (JSX)
 import React.Basic.DOM as R
-import Snap.React.Component ((|-), (|<), (|=))
 import Snap.Component.SYTC (Cmp, contraHoist)
+import Snap.Component.SYTC as C
+import Snap.React.Component ((|-), (|<), (|=))
 
 links :: JSX
 links = R.ul |< map toLink ls
@@ -28,13 +29,16 @@ links = R.ul |< map toLink ls
     , Tuple "Transactional Forms" $ urlFor Router.Transactional
     ]
 
+root :: forall m s u. Cmp m JSX s u
+root _ _ = R.div |< [ R.h1 |- R.text "Examples", links ]
+
 app :: Cmp Aff (Aff JSX) State Action
 app put s = case s of
-  Root -> pure $ R.div |< [ R.h1 |- R.text "Examples", links ]
-  TodoMvc x -> pure $ handleEffCmp put TodoMvc.app TodoMvc x
-  CatTron x -> handleEffCmp put CatTron.app CatTron x
-  Reducer x -> pure $ Reducer.app (put <<< ReducerAction) x
-  Transactional x -> pure $ handleEffCmp put Transactional.app Transactional x
+  Root            -> pure $                                    root      put unit
+  TodoMvc x       -> pure $ handleEffCmp TodoMvc       TodoMvc.app       put x
+  CatTron x       ->        handleEffCmp CatTron       CatTron.app       put x
+  Transactional x -> pure $ handleEffCmp Transactional Transactional.app put x
+  Reducer x       -> pure $ Reducer.app (put <<< ReducerAction) x
 
-handleEffCmp :: forall u s v. (Action -> Aff Unit) -> Cmp Effect v s u -> (u -> RouteState) -> s -> v
-handleEffCmp put cmp st x = contraHoist launchAff_ cmp (put <<< Update <<< st) x
+handleEffCmp :: forall u s v. (u -> RouteState) -> Cmp Effect v s u -> Cmp Aff v s Action
+handleEffCmp st = contraHoist launchAff_ <<< C.rmap (Update <<< st)
