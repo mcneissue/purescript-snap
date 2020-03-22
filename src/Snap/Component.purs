@@ -65,24 +65,24 @@ instance choiceComponent :: Monoid v => Choice (PComponent m v) where
 instance eetSemigroupal :: Semigroupal (->) Either Either Tuple (PComponent m v) where
   pzip (f /\ g) = ρ $ actual (un ρ f) (un ρ g)
     where
-    actual = C.switch
+    actual = C.demux
 
 instance eetUnital :: Unital (->) Void Void Unit (PComponent m v) where
   punit _ = ρ actual
     where
-    actual = C.never
+    actual = C.stop
 
 instance eetMonoidal :: Monoidal (->) Either Void Either Void Tuple Unit (PComponent m v)
 
 instance tetSemigroupal :: Semigroup v => Semigroupal (->) Tuple Either Tuple (PComponent m v) where
   pzip (f /\ g) = ρ $ actual (un ρ f) (un ρ g)
     where
-    actual = C.zip
+    actual = C.splice
 
 instance tetUnital :: Monoid v => Unital (->) Unit Void Unit (PComponent m v) where
   punit _ = ρ actual
     where
-    actual = C.infinite
+    actual = C.default
 
 instance tetMonoidal :: Monoid v => Monoidal (->) Tuple Unit Either Void Tuple Unit (PComponent m v)
 

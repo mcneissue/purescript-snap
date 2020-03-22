@@ -68,7 +68,7 @@ todo = C.ado
   in ev $ del { className: "destroy" }
   where
   editor' = const <$>! editor
-  editview = C.switch editor' viewer #! by (L.view T._dirty)
+  editview = C.demux editor' viewer #! by (L.view T._dirty)
 
 -- An li wrapper around each todo with the appropriate classnames
 listItem :: forall u. Filter -> Cmp Effect (JSX -> JSX) (Maybe Todo) u
