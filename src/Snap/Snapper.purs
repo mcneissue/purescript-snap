@@ -6,11 +6,12 @@ import Control.Alt (class Alt, (<|>))
 import Control.Alternative (class Alternative, class Plus, empty)
 import Control.Apply (lift2)
 import Control.MonadPlus (class MonadPlus, class MonadZero)
-import Data.Either (Either(..), either)
+import Data.Either (Either(..), choose, either)
 import Data.Profunctor (class Profunctor)
 import Data.Profunctor.Bimodule (class Bimodule, class LeftModule, class RightModule)
-import Data.Profunctor.Monoidal (class Semigroupal)
-import Data.Tuple (Tuple(..), fst, snd)
+import Data.Profunctor.Monoidal (class Monoidal, class Semigroupal, class Unital)
+import Data.Tuple (Tuple, fst, snd)
+import Data.Tuple.Nested ((/\))
 
 newtype Snapper m u s = Snapper { put :: u -> m Unit, get :: m s }
 
@@ -41,13 +42,39 @@ instance profunctorSnapper :: Functor m => Profunctor (Snapper m)
   where
   dimap f g (Snapper { put, get }) = Snapper $ { get: map g get, put: put <<< f }
 
-instance semiMonoidalSnapper :: Apply m => Semigroupal (->) Either Tuple Tuple (Snapper m)
+instance ttSemigroupalSnapper :: Apply m => Semigroupal (->) Tuple Tuple Tuple (Snapper m)
   where
-  pzip (Tuple (Snapper { get: g1, put: p1 }) (Snapper { get: g2, put: p2 })) = Snapper { get: lift2 (Tuple) g1 g2, put: either p1 p2 }
+  pzip (Snapper { get: g1, put: p1 } /\ Snapper { get: g2, put: p2 }) = Snapper { get: lift2 (/\) g1 g2, put: \(x /\ y) -> lift2 (<>) (p1 x) (p2 y) }
+
+instance ttUnitalSnapper :: Applicative m => Unital (->) Unit Unit Unit (Snapper m)
+  where
+  punit _ = Snapper { get: pure unit, put: pure }
+
+instance ttMonoidalSnapepr :: Applicative m => Monoidal (->) Tuple Unit Tuple Unit Tuple Unit (Snapper m)
+
+instance etSemigroupalSnapper :: Apply m => Semigroupal (->) Either Tuple Tuple (Snapper m)
+  where
+  pzip (Snapper { get: g1, put: p1 } /\ Snapper { get: g2, put: p2 }) = Snapper { get: lift2 (/\) g1 g2, put: either p1 p2 }
+
+instance etUnitalSnapper :: Applicative m => Unital (->) Void Unit Unit (Snapper m)
+  where
+  punit _ = Snapper { get: pure unit, put: absurd }
+
+instance etMonoidalSnapper :: Applicative m => Monoidal (->) Either Void Tuple Unit Tuple Unit (Snapper m)
 
 instance leftModuleSnapper :: Functor m => LeftModule (->) Tuple Either (Snapper m)
   where
   lstrength (Snapper { get, put }) = Snapper { get: Left <$> get, put: put <<< fst }
+
+instance eeSemigroupalSnapper :: Alt m => Semigroupal (->) Either Either Tuple (Snapper m)
+  where
+  pzip (Snapper { get: g1, put: p1 } /\ Snapper { get: g2, put: p2 }) = Snapper { get: choose g1 g2, put: either p1 p2 }
+
+instance eeUnitalSnapper :: Plus m => Unital (->) Void Void Unit (Snapper m)
+  where
+  punit _ = Snapper { get: empty, put: absurd }
+
+instance eeMonoidalSnapper :: Plus m => Monoidal (->) Either Void Either Void Tuple Unit (Snapper m)
 
 instance rightModuleSnapper :: Functor m => RightModule (->) Tuple Either (Snapper m)
   where
