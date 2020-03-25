@@ -2,22 +2,26 @@ module Examples.Routing.UI where
 
 import Prelude
 
-import Data.Lens ((^?))
-import Data.Profunctor (rmap)
+import Data.Either (Either(..))
+import Data.Either.Nested (type (\/), in1, in2, in3, in4)
 import Data.Tuple (Tuple(..))
-import Effect (Effect)
+import Data.Tuple.Nested (type (/\), get1, get2, get3, get4, (/\))
 import Effect.Aff (Aff, launchAff_)
-import Examples.CatTron.UI as CatTron
-import Examples.Reducer.UI as Reducer
+import Effect.Aff.Class (class MonadAff)
+import Examples.CatTron.State (State) as CatTron
+import Examples.CatTron.UI (app) as CatTron
+import Examples.Reducer.State (Action, State) as Reducer
+import Examples.Reducer.UI (app) as Reducer
 import Examples.Routing.Router (urlFor)
 import Examples.Routing.Router as Router
-import Examples.Routing.State (Action(..), RouteState, State, _cattron, _reducer, _root, _todomvc, _transactional)
-import Examples.TodoMVC.UI as TodoMvc
-import Examples.TransactionalForm.UI as Transactional
+import Examples.TodoMVC.State (App) as TodoMvc
+import Examples.TodoMVC.UI (app) as TodoMvc
+import Examples.TransactionalForm.State (State) as Transactional
+import Examples.TransactionalForm.UI (app) as Transactional
 import React.Basic (JSX)
 import React.Basic.DOM as R
-import Snap ((#!))
-import Snap.Component.SYTC (Cmp, contraHoist)
+import Routing.Duplex.Parser (RouteError)
+import Snap.Component.SYTC (Cmp, contraHoist, (||))
 import Snap.Component.SYTC as C
 import Snap.React.Component ((|-), (|<), (|=))
 
@@ -40,12 +44,30 @@ root _ _ =
      , links
      ]
 
-app :: Cmp Aff (Aff JSX) State Action
-app = C.ado
-  r  <- root              #! _root                        #! rmap Update
-  t  <- TodoMvc.app       #! _todomvc                     #! rmap Update        # contraHoist launchAff_
-  c  <- CatTron.app       #! _cattron                     #! rmap Update        # contraHoist launchAff_
-  tr <- Transactional.app #! _transactional               #! rmap Update        # contraHoist launchAff_
-  rd <- Reducer.app       #  C.lcmapMaybe (_ ^? _reducer) #! rmap ReducerAction
-  in
-  pure r <> pure t <> c <> pure tr <> pure rd
+-- TODO: Make this redirect after a bit
+_404 :: forall m. MonadAff m => Cmp m (m JSX) RouteError Router.Route
+_404 put err = pure $ R.text $ "Invalid route: \"" <> show err <> "\". Redirecting in 5 seconds..."
+
+type S = Unit \/ TodoMvc.App \/ CatTron.State \/ Transactional.State \/ Reducer.State
+type U = Void \/ TodoMvc.App \/ CatTron.State \/ Transactional.State \/ Reducer.Action
+
+page :: Cmp Aff (Aff JSX) S U
+page =
+  C.map pure root
+  || contraHoist launchAff_ (C.map pure TodoMvc.app)
+  || contraHoist launchAff_ CatTron.app
+  || contraHoist launchAff_ (C.map pure Transactional.app)
+  || C.map pure Reducer.app
+
+type S' = Unit /\ TodoMvc.App /\ CatTron.State /\ Transactional.State /\ Reducer.State
+
+app ::
+  Cmp Aff (Aff JSX)
+  ((RouteError \/ Router.Route) /\ S')
+  (Router.Route                 \/ U)
+app put (Left err                   /\ _) = _404 (put <<< Left) err
+app put (Right Router.Root          /\ s) = page (put <<< Right) (in1 $ get1 $ s)
+app put (Right Router.TodoMvc       /\ s) = page (put <<< Right) (in2 $ get2 $ s)
+app put (Right Router.CatTron       /\ s) = page (put <<< Right) (in3 $ get3 $ s)
+app put (Right Router.Transactional /\ s) = page (put <<< Right) (in4 $ get4 $ s)
+app put (Right Router.Reducer       /\ _ /\ _ /\ _ /\ _ /\ s) = page (put <<< Right) (Right $ Right $ Right $ Right $ s)

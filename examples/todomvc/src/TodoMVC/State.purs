@@ -8,6 +8,10 @@ import Data.Lens.Record.Extra (extractedBy)
 import Data.Maybe (Maybe(..), isJust)
 import Data.Profunctor.Optics (Transactional, isDirty)
 import Data.Symbol (SProxy(..))
+import Effect.AVar (AVar)
+import Effect.Aff.Class (class MonadAff)
+import Snap (Snapper')
+import Snap.React (affSnapper_)
 import Snap.React.Component (InputState)
 
 -- TODO:
@@ -116,3 +120,6 @@ _todos   = prop proxies.todos
 
 _filter :: L.Lens' App Filter
 _filter  = prop proxies.filter
+
+snapper :: forall m. MonadAff m => AVar Unit -> m (Snapper' m App)
+snapper = affSnapper_ initialState

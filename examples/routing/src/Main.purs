@@ -2,20 +2,20 @@ module Examples.Routing.Main where
 
 import Prelude
 
-import Data.Maybe (maybe, Maybe(..))
+import Data.Maybe (maybe)
 import Effect (Effect)
+import Effect.AVar (AVar)
 import Effect.Aff (error, launchAff_)
+import Effect.Aff.AVar (put)
 import Effect.Aff.AVar as AVar
 import Effect.Class (liftEffect)
 import Effect.Exception (throwException)
-import Effect.Ref as Ref
-import Examples.Routing.Router as Router
-import Examples.Routing.State (Action(..), initialState, reducer)
+import Examples.Routing.State (snapper)
 import Examples.Routing.UI (app)
+import Routing.Hash (foldHashes)
 import Snap (encapsulate, snap)
 import Snap.Component.SYTC (map) as C
-import Snap.React (reactTargetM, refSnapper)
-import Snap.Snapper (Snapper(..), reduced)
+import Snap.React (reactTargetM)
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -28,18 +28,19 @@ element = do
   mc <- window >>= document <#> toNonElementParentNode >>= getElementById "container"
   maybe (throwException (error "Couldn't find root element")) pure mc
 
+subscribeHash :: AVar Unit -> Effect Unit
+subscribeHash av = void $ foldHashes (\_ _ -> launchAff_ $ put unit av) (const $ pure unit)
+
 main :: Effect Unit
 main = do
   -- Find the DOM element and create an Ref to hold the application state
   e <- element
-  ref <- liftEffect $ Ref.new initialState
   launchAff_ $ do
     av  <- AVar.empty
     -- Create the state manager and target from the resources above
-    let snapper = reduced reducer $ refSnapper ref av
-    let (Snapper snapper') = snapper
-    let cmp = C.map join $ encapsulate snapper app
+    s <- snapper av
+    let cmp = C.map join $ encapsulate s app
     let target = reactTargetM e av
+    liftEffect $ subscribeHash av
     -- Snap everything together
-    _ <- Router.mkRouter \mr r -> when (mr /= Just r) $ snapper'.put $ Navigate r
     snap cmp target

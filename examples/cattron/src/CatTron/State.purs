@@ -9,7 +9,11 @@ import Data.Argonaut (Json, decodeJson, (.:))
 import Data.Either (Either(..), either)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Effect.AVar (AVar)
 import Effect.Aff (Aff)
+import Effect.Aff.Class (class MonadAff)
+import Snap (Snapper')
+import Snap.React (affSnapper_)
 
 data State = Loading | Error String | Gif String
 
@@ -39,3 +43,6 @@ decodeImageUrl s = do
   dat <- obj .: "data"
   url <- dat .: "image_url"
   pure url
+
+snapper :: forall m. MonadAff m => AVar Unit -> m (Snapper' m State)
+snapper = affSnapper_ initialState

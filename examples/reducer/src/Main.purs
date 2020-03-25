@@ -6,14 +6,11 @@ import Data.Maybe (maybe)
 import Effect (Effect)
 import Effect.Aff (error, launchAff_)
 import Effect.Aff.AVar as AVar
-import Effect.Class (liftEffect)
 import Effect.Exception (throwException)
-import Effect.Ref as Ref
-import Examples.Reducer.State (initialState, rootReducer)
+import Examples.Reducer.State (snapper)
 import Examples.Reducer.UI (app)
 import Snap (encapsulate, snap)
-import Snap.React (reactTargetM, refSnapper)
-import Snap.Snapper (reduced)
+import Snap.React (reactTargetM)
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -30,11 +27,10 @@ main :: Effect Unit
 main = do
   -- Find the DOM element and create an Ref to hold the application state
   e <- element
-  ref <- liftEffect $ Ref.new initialState
   launchAff_ $ do
     av  <- AVar.empty
     -- Create the state manager and target from the resources above
-    let snapper = reduced rootReducer $ refSnapper ref av
+    snapper <- snapper av
     let cmp = encapsulate snapper app
     let target = reactTargetM e av
     -- Snap everything together
