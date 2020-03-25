@@ -70,19 +70,19 @@ instance eetSemigroupal :: Semigroupal (->) Either Either Tuple (PComponent m v)
 instance eetUnital :: Unital (->) Void Void Unit (PComponent m v) where
   punit _ = ρ actual
     where
-    actual = C.stop
+    actual = C.initial
 
 instance eetMonoidal :: Monoidal (->) Either Void Either Void Tuple Unit (PComponent m v)
 
 instance tetSemigroupal :: Semigroup v => Semigroupal (->) Tuple Either Tuple (PComponent m v) where
   pzip (f /\ g) = ρ $ actual (un ρ f) (un ρ g)
     where
-    actual = C.splice
+    actual = C.switch
 
 instance tetUnital :: Monoid v => Unital (->) Unit Void Unit (PComponent m v) where
   punit _ = ρ actual
     where
-    actual = C.default
+    actual = C.poly
 
 instance tetMonoidal :: Monoid v => Monoidal (->) Tuple Unit Either Void Tuple Unit (PComponent m v)
 

@@ -88,7 +88,7 @@ lift2 f c1 c2 = un Compose $ A.lift2 f (Compose c1) (Compose c2)
 pure :: forall m v s u. v -> Cmp m v s u
 pure v _ _ = v
 
--- Bind
+-- Bind, Monad
 -- NB: All this currying/uncurrying nonsense is going on because I can't figure out
 --     a way to express (without newtype overhead) that fn2.bind = (readert fn).bind
 bind :: forall m s u a b. Cmp m a s u -> (a -> Cmp m b s u) -> Cmp m b s u
@@ -121,17 +121,21 @@ lcmapMaybe p cmp put s = case p s of
 demux :: forall m v a b c d. Cmp m v a b -> Cmp m v c d -> Cmp m v (Either a c) (Either b d)
 demux f g set = either (f $ set <<< Left) (g $ set <<< Right)
 
+infixr 4 demux as ||
+
 -- Demuxative
-stop :: forall m v a. Cmp m v Void a
-stop = const absurd
+initial :: forall m v a. Cmp m v Void a
+initial = const absurd
 
--- Splice
-splice :: forall m v s s' u u'. Semigroup v => Cmp m v s u -> Cmp m v s' u' -> Cmp m v (Tuple s s') (Either u u')
-splice c c' set (Tuple s s') = c (set <<< Left) s <> c' (set <<< Right) s'
+-- Switch
+switch :: forall m v s s' u u'. Semigroup v => Cmp m v s u -> Cmp m v s' u' -> Cmp m v (Tuple s s') (Either u u')
+switch c c' set (Tuple s s') = c (set <<< Left) s <> c' (set <<< Right) s'
 
--- Spliceable
-default :: forall m v s u. Monoid v => Cmp m v s u
-default = mempty
+infixr 5 switch as &|
+
+-- Switchable
+poly :: forall m v s u. Monoid v => Cmp m v s u
+poly = mempty
 
 -- Codemux
 codemux :: forall m v s1 s2 u1 u2. Applicative m => Monoid v => Cmp m v (Either s1 s2) (Either u1 u2) -> (Cmp m v s1 u1 /\ Cmp m v s2 u2)
