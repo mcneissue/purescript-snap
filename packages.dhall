@@ -127,7 +127,7 @@ let overrides =
           //  { repo =
                   "https://github.com/masaeedu/purescript-profunctor.git"
               , version =
-                  "ae2d571615ee4e9e1f29248fb489e89c8faca592"
+                  "3a9fb4082837aecfef6a780cc0ff5539c45efa1b"
               }
       }
 
