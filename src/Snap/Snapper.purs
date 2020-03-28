@@ -5,8 +5,10 @@ import Prelude
 import Control.Alt (class Alt, (<|>))
 import Control.Alternative (class Alternative, class Plus, empty)
 import Control.Apply (lift2)
+import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
 import Control.MonadPlus (class MonadPlus, class MonadZero)
 import Data.Either (Either(..), choose, either)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Profunctor (class Profunctor, dimap)
 import Data.Profunctor.Bimodule (class Bimodule, class LeftModule, class RightModule)
 import Data.Profunctor.Monoidal (class Monoidal, class Semigroupal, class Unital, poly, (&|))
@@ -124,3 +126,9 @@ reduced red (Snapper { get, put }) = Snapper { get: get, put: put' }
     s <- get
     s' <- red u s
     put s'
+
+absorbError :: forall m u s. Functor m => Snapper m u (Maybe s) -> Snapper (MaybeT m) u s
+absorbError (Snapper { get, put }) = Snapper { get: MaybeT get, put: MaybeT <<< map Just <<< put }
+
+withDefaultState :: forall m u s. Functor m => s -> Snapper (MaybeT m) u s -> Snapper m u s
+withDefaultState s (Snapper { get, put }) = Snapper { get: map (fromMaybe s) $ runMaybeT $ get, put: void <<< runMaybeT <<< put }
