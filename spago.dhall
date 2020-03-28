@@ -29,6 +29,8 @@ You can edit this file as you like.
     , "profunctor-traverse"
     , "profunctor-extra"
     , "web-storage"
+    , "simple-json"
+    , "kishimen"
     ]
 , packages =
     ./packages.dhall

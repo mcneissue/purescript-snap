@@ -2,16 +2,21 @@ module Examples.TodoMVC.State where
 
 import Prelude
 
+import Control.Alternative (class Plus)
+import Data.Generic.Rep (class Generic)
 import Data.Lens as L
 import Data.Lens.Record (prop)
 import Data.Lens.Record.Extra (extractedBy)
-import Data.Maybe (Maybe(..), isJust)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Profunctor (dimap, lcmap, rmap)
 import Data.Profunctor.Optics (Transactional, isDirty)
 import Data.Symbol (SProxy(..))
 import Effect.AVar (AVar)
 import Effect.Aff.Class (class MonadAff)
+import Kishimen (genericSumToVariant, variantToGenericSum)
+import Simple.JSON as JSON
 import Snap (Snapper')
-import Snap.React (affSnapper_)
+import Snap.React (affSnapper_, localstorage)
 import Snap.React.Component (InputState)
 
 -- TODO:
@@ -30,7 +35,17 @@ type Todo =
 type Todos = Array Todo
 
 data Filter = All | Active | Completed
+
+derive instance genericFilter :: Generic Filter _
 derive instance eqFilter :: Eq Filter
+
+instance readForeignFilter :: JSON.ReadForeign Filter
+  where
+  readImpl = map variantToGenericSum <<< JSON.read'
+
+instance writeForeignFilter :: JSON.WriteForeign Filter
+  where
+  writeImpl = JSON.write <<< genericSumToVariant
 
 instance showFilter :: Show Filter where
   show All = "All"
@@ -121,5 +136,8 @@ _todos   = prop proxies.todos
 _filter :: L.Lens' App Filter
 _filter  = prop proxies.filter
 
-snapper :: forall m. MonadAff m => AVar Unit -> m (Snapper' m App)
-snapper = affSnapper_ initialState
+snapper :: forall m. MonadAff m => Plus m => AVar Unit -> m (Snapper' m App)
+snapper av = do
+  s1 <- affSnapper_ Nothing av
+  s2 <- localstorage "todomvc"
+  pure $ rmap (fromMaybe initialState) $ lcmap Just s1 <> dimap JSON.writeJSON (_ >>= JSON.readJSON_) s2
