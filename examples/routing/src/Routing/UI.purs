@@ -7,7 +7,7 @@ import Data.Newtype (un)
 import Data.Profunctor.Traverse (foldDemux)
 import Data.Record.Choose (choose)
 import Data.Symbol (SProxy(..))
-import Data.Tuple (Tuple(..))
+import Data.Tuple.Nested ((/\))
 import Data.Variant (Variant, expand, inj)
 import Effect.Aff (Aff, launchAff_)
 import Examples.CatTron.UI (app) as CatTron
@@ -30,12 +30,12 @@ import Snap.React.Component ((|-), (|<), (|=))
 links :: JSX
 links = R.ul |< map toLink ls
   where
-  toLink (Tuple n a) = R.li |- R.a |= { href: a } |- R.text n
+  toLink (n /\ a) = R.li |- R.a |= { href: a } |- R.text n
   ls =
-    [ Tuple "CatTron 9000 Cat Gif Viewing Device" $ urlFor Router.CatTron
-    , Tuple "Reducers" $ urlFor Router.Reducer
-    , Tuple "TodoMVC" $ urlFor Router.TodoMvc
-    , Tuple "Transactional Forms" $ urlFor Router.Transactional
+    [ "CatTron 9000 Cat Gif Viewing Device" /\ urlFor Router.CatTron
+    , "Reducers"                            /\ urlFor Router.Reducer
+    , "TodoMVC"                             /\ urlFor Router.TodoMvc
+    , "Transactional Forms"                 /\ urlFor Router.Transactional
     ]
 
 root :: forall m s u. Cmp m JSX s u
