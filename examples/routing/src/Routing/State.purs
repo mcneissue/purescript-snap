@@ -1,55 +1,30 @@
-module Examples.Routing.State where
+module Examples.Routing.State (module Examples.Routing.State, module ST) where
 
 import Prelude
 
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Profunctor.Monoidal (mono)
+import Data.Profunctor.Traverse (foldSplice)
+import Data.Variant (Variant)
+import Effect.AVar (AVar)
 import Effect.Aff (Aff)
-import Effect.Class.Console (log)
+import Effect.Class (liftEffect)
 import Examples.CatTron.State as CatTron
 import Examples.Reducer.State as Reducer
-import Examples.Routing.Router as Router
+import Examples.Routing.Router (parser)
+import Examples.Routing.State.Types (Update, State)
+import Examples.Routing.State.Types as ST
 import Examples.TodoMVC.State as TodoMvc
 import Examples.TransactionalForm.State as Transactional
+import Snap (Snapper, hoist)
+import Snap.React (route)
 
-data RouteState
-  = Root
-  | TodoMvc TodoMvc.App
-  | CatTron CatTron.State
-  | Reducer Reducer.State
-  | Transactional Transactional.State
-
-derive instance genericRouteState :: Generic RouteState _
-
-instance showRouteState :: Show RouteState where
-  show = genericShow
-
-type State = RouteState
-
-data Action
-  = Navigate Router.Route
-  | Update RouteState -- Handle updates for non-reducer components
-  | ReducerAction Reducer.Action -- Handle updates for the Reducers examples
-
-initialState :: State
-initialState = Root
-
-stateFor :: Router.Route -> State
-stateFor r = case r of
-  Router.Root -> Root
-  Router.CatTron -> CatTron CatTron.initialState
-  Router.Reducer -> Reducer Reducer.initialState
-  Router.TodoMvc -> TodoMvc TodoMvc.initialState
-  Router.Transactional -> Transactional Transactional.initialState
-
-reducer :: Action -> State -> Aff State
-reducer a s = case a of
-  Navigate r -> do
-    log $ "Navigating to " <> show r
-    pure $ stateFor r
-  Update s' -> pure s'
-  ReducerAction ra ->
-    let rs = case s of
-               Reducer x -> x
-               _ -> Reducer.initialState
-    in Reducer <$> Reducer.rootReducer ra rs
+snapper :: AVar Unit -> Aff (Snapper Aff (Variant Update) (Record State))
+snapper av = ado
+  nav      <- pure $ hoist liftEffect $ route parser
+  root     <- pure $ mono
+  todomvc  <- TodoMvc.snapper av
+  cattron  <- CatTron.snapper av
+  transact <- Transactional.snapper av
+  reducer  <- Reducer.snapper av
+  in
+  foldSplice { nav, root, todomvc, cattron, transact, reducer }

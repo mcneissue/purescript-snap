@@ -22,8 +22,8 @@ import React.Basic.Events (EventFn, SyntheticEvent)
 import React.Basic.Events (handler, handler_) as R
 import Record as RD
 import Snap.Component ((#!), ($!))
-import Snap.SYTC.Component (Cmp, Cmp')
-import Snap.SYTC.Component as C
+import Snap.Component.SYTC (Cmp, Cmp')
+import Snap.Component.SYTC as C
 
 -- Some convenience things
 unionWith :: forall p q r. Union p q r => Record q -> Record p -> Record r

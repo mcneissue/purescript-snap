@@ -26,6 +26,7 @@ You can edit this file as you like.
     , "argonaut"
     , "routing-duplex"
     , "routing"
+    , "profunctor-traverse"
     ]
 , packages =
     ./packages.dhall

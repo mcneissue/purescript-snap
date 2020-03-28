@@ -2,22 +2,23 @@ module Examples.Reducer.UI where
 
 import Prelude
 
-import Data.Maybe (Maybe, fromMaybe)
 import Data.Either (Either(..))
+import Data.Maybe (Maybe, fromMaybe)
+import Data.Tuple (fst, snd)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Examples.Reducer.State (CounterAction(..), DelayerAction(..), State)
 import React.Basic (JSX)
 import React.Basic.DOM as R
+import Snap.Component.SYTC (Cmp)
+import Snap.Component.SYTC as C
 import Snap.React.Component ((|<), (|-))
 import Snap.React.Component as RC
-import Snap.SYTC.Component (Cmp)
-import Snap.SYTC.Component as C
 
 app :: Cmp Aff JSX State (Either CounterAction DelayerAction)
 app = C.ado
-  cntr <- fromEffCmp $ counter # C.dimap _.counter Left
-  dlyr <- delayer # C.dimap _.delayer Right
+  cntr <- fromEffCmp $ counter # C.dimap fst Left
+  dlyr <- delayer # C.dimap snd Right
   in R.div |< [ cntr, dlyr ]
 
 counter :: Cmp Effect JSX Int CounterAction

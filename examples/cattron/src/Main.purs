@@ -6,14 +6,12 @@ import Data.Maybe (maybe)
 import Effect (Effect)
 import Effect.Aff (error, launchAff_)
 import Effect.Aff.AVar as AVar
-import Effect.Class (liftEffect)
 import Effect.Exception (throwException)
-import Effect.Ref as Ref
-import Examples.CatTron.State (initialState)
+import Examples.CatTron.State (snapper)
 import Examples.CatTron.UI (app)
 import Snap (encapsulate, snap)
-import Snap.React (reactTargetM, refSnapper)
-import Snap.SYTC.Component (contraHoist, map) as C
+import Snap.Component.SYTC (contraHoist, map) as C
+import Snap.React (reactTargetM)
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -30,11 +28,11 @@ main :: Effect Unit
 main = do
   -- Find the DOM element and create an Ref to hold the application state
   e <- element
-  ref <- liftEffect $ Ref.new initialState
   launchAff_ $ do
-    av  <- AVar.empty
+    av <- AVar.empty
     -- Create the state manager and target from the resources above
-    let snapper = refSnapper ref av
+    snapper <- snapper av
     let target = reactTargetM e av
+    let cmp = C.map join $ encapsulate snapper $ C.contraHoist launchAff_ $ app
     -- Snap everything together
-    snap (C.map join $ encapsulate snapper $ C.contraHoist launchAff_ $ app) target
+    snap cmp target

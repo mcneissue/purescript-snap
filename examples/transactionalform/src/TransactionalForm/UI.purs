@@ -11,8 +11,8 @@ import React.Basic.DOM as R
 import Snap.Component ((#!))
 import Snap.React.Component ((|<), (|~))
 import Snap.React.Component as S
-import Snap.SYTC.Component (Cmp')
-import Snap.SYTC.Component as C
+import Snap.Component.SYTC (Cmp')
+import Snap.Component.SYTC as C
 
 form :: Cmp' Effect JSX FormData
 form = C.ado

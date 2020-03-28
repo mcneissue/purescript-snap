@@ -1,28 +1,13 @@
-module Snap where
+module Snap (module Snap, module C, module S, module T) where
 
 import Prelude
 
-import Data.Functor.Contravariant (class Contravariant, cmap)
-import Snap.SYTC.Component (Cmp)
+import Snap.Component as C
+import Snap.Snapper as S
+import Snap.Target as T
 
-type Snapper m s u = { put :: u -> m Unit, get :: m s }
+import Snap.Component.SYTC (Cmp)
+import Snap.Snapper (Snapper(..))
 
-encapsulate :: forall m v s u. Monad m => Snapper m s u -> Cmp m v s u -> Cmp m (m v) Unit Void
-encapsulate { get, put } cmp _ _ = get <#> cmp put
-
-newtype Target m v = Target (v -> m (Target m v))
-
-instance contravariantTarget :: Functor m => Contravariant (Target m) where
-  cmap f (Target a) = Target \v -> cmap f <$> a (f v)
-
-snap :: forall m v x
-      . Monad m
-     => Cmp m v Unit Void
-     -> Target m v
-     -> m x
-snap cmp t = loop t
-  where
-  v = cmp absurd unit
-  loop (Target render) = do
-    t' <- render v
-    loop t'
+encapsulate :: forall m v s u x y. Monad m => Snapper m u s -> Cmp m v s u -> Cmp m (m v) x y
+encapsulate (Snapper { get, put }) cmp _ _ = get <#> cmp put

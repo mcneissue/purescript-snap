@@ -4,34 +4,47 @@ import Prelude hiding ((/))
 
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe)
-import Data.Either (Either(..))
-import Effect (Effect)
-import Effect.Aff (Aff, launchAff_)
-import Effect.Class (liftEffect)
-import Effect.Console (logShow)
+import Data.Lens (Iso', re, (^.))
+import Data.Profunctor (dimap)
+import Data.Record.Choose (getField, hasField)
+import Data.Symbol (SProxy(..))
+import Examples.Routing.State.Types (Route)
+import Partial.Unsafe (unsafeCrashWith)
 import Routing.Duplex (RouteDuplex', print, root)
-import Routing.Duplex as RD
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/))
-import Routing.Duplex.Parser (RouteError(..))
-import Routing.Hash (matchesWith)
 
-data Route 
-  = Root 
+data Route'
+  = Root
   | CatTron
   | Reducer
   | TodoMvc
   | Transactional
 
-derive instance genericRoute :: Generic Route _
-derive instance eqRoute :: Eq Route
+derive instance genericRoute :: Generic Route' _
+derive instance eqRoute :: Eq Route'
 
-instance showRoute :: Show Route where
+instance showRoute :: Show Route' where
   show = genericShow
 
+convert :: Iso' Route Route'
+convert = dimap (bwd <<< getField) fwd
+  where
+  fwd Root          = hasField (SProxy :: _ "root")
+  fwd CatTron       = hasField (SProxy :: _ "cattron")
+  fwd Reducer       = hasField (SProxy :: _ "reducer")
+  fwd TodoMvc       = hasField (SProxy :: _ "todomvc")
+  fwd Transactional = hasField (SProxy :: _ "transact")
+
+  bwd "root" = Root
+  bwd "cattron" = CatTron
+  bwd "reducer" = Reducer
+  bwd "todomvc" = TodoMvc
+  bwd "transact" = Transactional
+  bwd x = unsafeCrashWith x
+
 parser :: RouteDuplex' Route
-parser = root $ sum
+parser = convert $ root $ sum
   { "Root": noArgs
   , "CatTron": "cattron" / noArgs
   , "Reducer": "reducer" / noArgs
@@ -39,18 +52,5 @@ parser = root $ sum
   , "Transactional": "transactional" / noArgs
   }
 
--- Create a hash-based router
-mkRouter :: (Maybe Route -> Route -> Aff Unit) -> Aff (Effect Unit)
-mkRouter f = liftEffect $ matchesWith parse handle
-  where
-  handle mr r = do
-    logShow r
-    launchAff_ $ f mr r
-  
-  parse s = case RD.parse parser s of
-    Left EndOfPath -> Right Root
-    Left e -> Left e
-    r -> r
-
-urlFor :: Route -> String
-urlFor r = "/#" <> print parser r
+urlFor :: Route' -> String
+urlFor r = "/#" <> print parser (r ^. re convert)

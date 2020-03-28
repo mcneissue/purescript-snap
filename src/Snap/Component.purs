@@ -2,14 +2,17 @@ module Snap.Component where
 
 import Prelude
 
+import Data.Either (Either)
 import Data.Newtype (class Newtype, un, under)
 import Data.Profunctor (class Profunctor)
 import Data.Profunctor.Choice (class Choice)
 import Data.Profunctor.Lazy (class Lazy2)
-import Data.Profunctor.Monoidal (class Comonoidal, class ComonoidalMono, class Cosemigroupal, class CosemigroupalMono, class MonoidalMono, class SemigroupalMono, switch)
+import Data.Profunctor.Monoidal (class Monoidal, class Semigroupal, class Unital)
 import Data.Profunctor.Strong (class Strong)
-import Snap.SYTC.Component (Cmp)
-import Snap.SYTC.Component as C
+import Data.Tuple (Tuple)
+import Data.Tuple.Nested ((/\))
+import Snap.Component.SYTC (Cmp)
+import Snap.Component.SYTC as C
 
 -- Profunctor wrapper
 newtype PComponent m v s u
@@ -59,30 +62,29 @@ instance choiceComponent :: Monoid v => Choice (PComponent m v) where
     where
     actual = C.right
 
-instance cosemigroupalMonoComponent :: CosemigroupalMono (PComponent m v) where
-  switchMono = switch
+instance eetSemigroupal :: Semigroupal (->) Either Either Tuple (PComponent m v) where
+  pzip (f /\ g) = ρ $ actual (un ρ f) (un ρ g)
+    where
+    actual = C.demux
 
-instance cosemigroupalComponent :: Cosemigroupal (PComponent m v) where
-  switch f g = ρ $ actual (un ρ f) (un ρ g)
+instance eetUnital :: Unital (->) Void Void Unit (PComponent m v) where
+  punit _ = ρ actual
+    where
+    actual = C.initial
+
+instance eetMonoidal :: Monoidal (->) Either Void Either Void Tuple Unit (PComponent m v)
+
+instance tetSemigroupal :: Semigroup v => Semigroupal (->) Tuple Either Tuple (PComponent m v) where
+  pzip (f /\ g) = ρ $ actual (un ρ f) (un ρ g)
     where
     actual = C.switch
 
-instance comonoidalMonoComponent :: ComonoidalMono (PComponent m v) where
-  never = ρ actual
+instance tetUnital :: Monoid v => Unital (->) Unit Void Unit (PComponent m v) where
+  punit _ = ρ actual
     where
-    actual = C.never
+    actual = C.poly
 
-instance comonoidalComponent :: Comonoidal (PComponent m v)
-
-instance semigroupalMonoComponent :: Monoid v => SemigroupalMono (PComponent m v) where
-  zipMono f g = ρ $ actual (un ρ f) (un ρ g)
-    where
-    actual = C.zipMono
-
-instance monoidalMonoComponent :: Monoid v => MonoidalMono (PComponent m v) where
-  infinite = ρ actual
-    where
-    actual = C.infinite
+instance tetMonoidal :: Monoid v => Monoidal (->) Tuple Unit Either Void Tuple Unit (PComponent m v)
 
 focus :: forall m v s u x y. Newtype x y => (PComponent m v s u -> x) -> Cmp m v s u -> y
 focus = under ρ
