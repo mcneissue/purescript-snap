@@ -31,9 +31,5 @@ type PageUpdate r =
   | r
   )
 
-type NavState r = ( nav :: RouteError \/ Route | r )
-
-type NavUpdate r = ( nav :: Route | r )
-
-type State = PageState + NavState ()
-type Update = PageUpdate + NavUpdate ()
+type State = PageState + ( nav :: RouteError \/ Route )
+type Update = PageUpdate + ( nav :: Route )
