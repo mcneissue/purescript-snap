@@ -140,6 +140,14 @@ let additions =
                 manifest.dependencies
                 "https://github.com/masaeedu/purescript-record-optics-extra.git"
                 "master"
+      , profunctor-traverse =
+          let manifest =
+                https://raw.githubusercontent.com/jlavelle/purescript-profunctor-traverse/master/spago.dhall sha256:bba75d2ecde08251b3ae35c647d316bc51bb0aa98a04bd8d58573e77ea55977d
+          
+          in  mkPackage
+                manifest.dependencies
+                "https://github.com/jlavelle/purescript-profunctor-traverse.git"
+                "0db612c6fafc20c00a1987a304190a4e646ac1cd"
       }
 
 in  upstream // overrides // additions
