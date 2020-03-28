@@ -122,13 +122,6 @@ let overrides =
               , version =
                   "semigroup"
               }
-      , profunctor = 
-              upstream.profunctor
-          //  { repo =
-                  "https://github.com/masaeedu/purescript-profunctor.git"
-              , version =
-                  "3a9fb4082837aecfef6a780cc0ff5539c45efa1b"
-              }
       }
 
 let additions =
@@ -147,7 +140,15 @@ let additions =
           in  mkPackage
                 manifest.dependencies
                 "https://github.com/jlavelle/purescript-profunctor-traverse.git"
-                "0db612c6fafc20c00a1987a304190a4e646ac1cd"
+                "5068e90b723a784ca60753c301b46cd4c1fe77bd"
+      , profunctor-extra =
+          let manifest =
+                https://raw.githubusercontent.com/masaeedu/purescript-profunctor-extra/master/spago.dhall sha256:bba75d2ecde08251b3ae35c647d316bc51bb0aa98a04bd8d58573e77ea55977d
+          
+          in  mkPackage
+                manifest.dependencies
+                "https://github.com/masaeedu/purescript-profunctor-extra.git"
+                "691eef88ceb830c04f025305d37457f8c048c4bf"
       }
 
 in  upstream // overrides // additions
