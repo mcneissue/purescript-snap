@@ -7,9 +7,9 @@ import Control.Alternative (class Alternative, class Plus, empty)
 import Control.Apply (lift2)
 import Control.MonadPlus (class MonadPlus, class MonadZero)
 import Data.Either (Either(..), choose, either)
-import Data.Profunctor (class Profunctor)
+import Data.Profunctor (class Profunctor, dimap)
 import Data.Profunctor.Bimodule (class Bimodule, class LeftModule, class RightModule)
-import Data.Profunctor.Monoidal (class Monoidal, class Semigroupal, class Unital)
+import Data.Profunctor.Monoidal (class Monoidal, class Semigroupal, class Unital, poly, (&|))
 import Data.Tuple (Tuple, fst, snd)
 import Data.Tuple.Nested ((/\))
 
@@ -79,6 +79,24 @@ instance eeMonoidalSnapper :: Plus m => Monoidal (->) Either Void Either Void Tu
 instance rightModuleSnapper :: Functor m => RightModule (->) Tuple Either (Snapper m)
   where
   rstrength (Snapper { get, put }) = Snapper { get: Right <$> get, put: put <<< snd }
+
+instance teSemigroupalSnapper :: (Alt m, Apply m) => Semigroupal (->) Tuple Either Tuple (Snapper m)
+  where
+  pzip (Snapper { get: g1, put: p1 } /\ Snapper { get: g2, put: p2 }) = Snapper { get: choose g1 g2, put: \(u1 /\ u2) -> lift2 (<>) (p1 u1) (p2 u2) }
+
+instance teUnitalSnapper :: (Plus m, Applicative m) => Unital (->) Unit Void Unit (Snapper m)
+  where
+  punit _ = Snapper { get: empty, put: pure }
+
+instance teMonoidalSnapper :: (Plus m, Applicative m) => Monoidal (->) Tuple Unit Either Void Tuple Unit (Snapper m)
+
+instance semigroupSnapper :: (Alt m, Apply m) => Semigroup (Snapper m u s)
+  where
+  append s1 s2 = dimap (\s -> s /\ s) (either identity identity) $ s1 &| s2
+
+instance monoidSnapper :: (Plus m, Applicative m) => Monoid (Snapper m u s)
+  where
+  mempty = poly
 
 instance bimoduleSnapper :: Functor m => Bimodule (->) Tuple Either (Snapper m)
 
