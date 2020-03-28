@@ -6,7 +6,7 @@ import Data.Either (Either)
 import Data.Newtype (class Newtype, un, under)
 import Data.Profunctor (class Profunctor)
 import Data.Profunctor.Choice (class Choice)
-import Data.Profunctor.Lazy (class Lazy2)
+import Data.Profunctor.Lazy (class Lazy)
 import Data.Profunctor.Monoidal (class Monoidal, class Semigroupal, class Unital)
 import Data.Profunctor.Strong (class Strong)
 import Data.Tuple (Tuple)
@@ -26,8 +26,8 @@ derive instance newtypeComponent :: Newtype (PComponent m v s u) _
 type PComponent' m v s
   = PComponent m v s s
 
-instance componentLazy :: Lazy2 (PComponent m v) where
-  defer2 f = ρ $ actual (un ρ <<< f)
+instance componentLazy :: Lazy (PComponent m v) where
+  defer f = ρ $ actual (un ρ <<< f)
     where
     actual = C.defer
 

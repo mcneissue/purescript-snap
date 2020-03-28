@@ -27,6 +27,7 @@ You can edit this file as you like.
     , "routing-duplex"
     , "routing"
     , "profunctor-traverse"
+    , "profunctor-extra"
     ]
 , packages =
     ./packages.dhall
