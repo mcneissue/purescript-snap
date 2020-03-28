@@ -6,7 +6,7 @@ import Data.Profunctor.Monoidal (mono)
 import Data.Profunctor.Traverse (foldSplice)
 import Data.Variant (Variant)
 import Effect.AVar (AVar)
-import Effect.Aff.Class (class MonadAff)
+import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Examples.CatTron.State as CatTron
 import Examples.Reducer.State as Reducer
@@ -18,7 +18,7 @@ import Examples.TransactionalForm.State as Transactional
 import Snap (Snapper, hoist)
 import Snap.React (route)
 
-snapper :: forall m. MonadAff m => AVar Unit -> m (Snapper m (Variant Update) (Record State))
+snapper :: AVar Unit -> Aff (Snapper Aff (Variant Update) (Record State))
 snapper av = ado
   nav      <- pure $ hoist liftEffect $ route parser
   root     <- pure $ mono
