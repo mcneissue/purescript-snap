@@ -5,11 +5,13 @@ import Prelude
 import Control.Alt (class Alt, (<|>))
 import Control.Alternative (class Alternative, class Plus, empty)
 import Control.Apply (lift2)
+import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
 import Control.MonadPlus (class MonadPlus, class MonadZero)
 import Data.Either (Either(..), choose, either)
-import Data.Profunctor (class Profunctor)
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Profunctor (class Profunctor, dimap)
 import Data.Profunctor.Bimodule (class Bimodule, class LeftModule, class RightModule)
-import Data.Profunctor.Monoidal (class Monoidal, class Semigroupal, class Unital)
+import Data.Profunctor.Monoidal (class Monoidal, class Semigroupal, class Unital, poly, (&|))
 import Data.Tuple (Tuple, fst, snd)
 import Data.Tuple.Nested ((/\))
 
@@ -80,6 +82,24 @@ instance rightModuleSnapper :: Functor m => RightModule (->) Tuple Either (Snapp
   where
   rstrength (Snapper { get, put }) = Snapper { get: Right <$> get, put: put <<< snd }
 
+instance teSemigroupalSnapper :: (Alt m, Apply m) => Semigroupal (->) Tuple Either Tuple (Snapper m)
+  where
+  pzip (Snapper { get: g1, put: p1 } /\ Snapper { get: g2, put: p2 }) = Snapper { get: choose g1 g2, put: \(u1 /\ u2) -> lift2 (<>) (p1 u1) (p2 u2) }
+
+instance teUnitalSnapper :: (Plus m, Applicative m) => Unital (->) Unit Void Unit (Snapper m)
+  where
+  punit _ = Snapper { get: empty, put: pure }
+
+instance teMonoidalSnapper :: (Plus m, Applicative m) => Monoidal (->) Tuple Unit Either Void Tuple Unit (Snapper m)
+
+instance semigroupSnapper :: (Alt m, Apply m) => Semigroup (Snapper m u s)
+  where
+  append s1 s2 = dimap (\s -> s /\ s) (either identity identity) $ s1 &| s2
+
+instance monoidSnapper :: (Plus m, Applicative m) => Monoid (Snapper m u s)
+  where
+  mempty = poly
+
 instance bimoduleSnapper :: Functor m => Bimodule (->) Tuple Either (Snapper m)
 
 hoist :: forall m n s u. (m ~> n) -> Snapper m s u -> Snapper n s u
@@ -106,3 +126,9 @@ reduced red (Snapper { get, put }) = Snapper { get: get, put: put' }
     s <- get
     s' <- red u s
     put s'
+
+absorbError :: forall m u s. Functor m => Snapper m u (Maybe s) -> Snapper (MaybeT m) u s
+absorbError (Snapper { get, put }) = Snapper { get: MaybeT get, put: MaybeT <<< map Just <<< put }
+
+withDefaultState :: forall m u s. Functor m => s -> Snapper (MaybeT m) u s -> Snapper m u s
+withDefaultState s (Snapper { get, put }) = Snapper { get: map (fromMaybe s) $ runMaybeT $ get, put: void <<< runMaybeT <<< put }
