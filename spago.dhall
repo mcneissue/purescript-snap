@@ -28,6 +28,7 @@ You can edit this file as you like.
     , "routing"
     , "profunctor-traverse"
     , "profunctor-extra"
+    , "web-storage"
     ]
 , packages =
     ./packages.dhall
