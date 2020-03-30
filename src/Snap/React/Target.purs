@@ -22,4 +22,4 @@ reactTargetM e sync = Target go
     v' <- v
     liftEffect $ R.render v' e
     _ <- liftAff $ AVar.take sync
-    pure (Target go)
+    pure $ Target go
