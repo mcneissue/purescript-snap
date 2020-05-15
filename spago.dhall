@@ -5,7 +5,7 @@ You can edit this file as you like.
 { sources =
     [ "src/**/*.purs", "test/**/*.purs", "examples/**/*.purs" ]
 , name =
-    "my-project"
+    "snap"
 , dependencies =
     [ "effect"
     , "console"
