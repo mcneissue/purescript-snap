@@ -157,7 +157,9 @@ tabPressed = keypressed # C.when ((==) "Tab")
 transacted :: forall vr vs vc s m.
   { revert :: Cmp m vr s _
   , save   :: Cmp m vs s _
-  , change :: Cmp' m vc s | _ } ->
+  , change :: Cmp' m vc s
+  | _
+  } ->
   Cmp' m { revert :: vr, save :: vs, change :: vc } (Transactional s)
 transacted { change, save, revert } = atomically $! C.ado
   c <- change #! P.rmap Change

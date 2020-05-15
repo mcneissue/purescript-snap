@@ -3,7 +3,11 @@ module Snap.Component.SYTC where
 import Control.Applicative (class Applicative)
 import Control.Apply (lift2) as A
 import Control.Category (class Category, class Semigroupoid, (<<<), (>>>))
+import Data.Array (mapWithIndex)
+import Data.Compactable (compact)
 import Data.Either (Either(..), either)
+import Data.Eq ((==))
+import Data.FoldableWithIndex (foldMapWithIndex)
 import Data.Functor.Compose (Compose(..))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (un)
@@ -158,3 +162,11 @@ when f c set = c set'
 
 echo :: forall m s u. Cmp m s s u
 echo _ s = s
+
+-- Given a component that can display a possible value, create a component that can
+-- display a list of values
+withered :: forall m v x. Monoid v => Cmp' m v (Maybe x) -> Cmp' m v (Array x)
+withered cmp u s = foldMapWithIndex (\k mt -> cmp (go k) mt) (Just P.<$> s)
+  where
+  go k Nothing  = u $ compact $ mapWithIndex (\i x -> if k == i then Nothing else Just x) s
+  go k (Just t) = u $ mapWithIndex (\i x -> if k == i then t else x) s
