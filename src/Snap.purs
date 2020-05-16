@@ -10,7 +10,7 @@ import Snap.Component.SYTC (Cmp)
 import Snap.Snapper (Snapper(..))
 import Snap.Target (Target(..))
 
-encapsulate :: forall m v s u x y. Monad m => Snapper m u s -> Cmp m v s u -> Cmp m (m v) x y
+encapsulate :: forall m v s u x y. Functor m => Snapper m u s -> Cmp m v s u -> Cmp m (m v) x y
 encapsulate (Snapper { get, put }) cmp _ _ = get <#> cmp put
 
 snap :: forall m v x

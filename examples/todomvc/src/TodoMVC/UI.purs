@@ -3,9 +3,6 @@ module Examples.TodoMVC.UI where
 import Prelude hiding (map,apply)
 
 import Data.Array (filter, snoc) as A
-import Data.Array (mapWithIndex)
-import Data.Compactable (compact)
-import Data.FoldableWithIndex (foldMapWithIndex)
 import Data.Lens (_Just, traversed)
 import Data.Lens as L
 import Data.Maybe (Maybe(..))
@@ -19,7 +16,7 @@ import Examples.TodoMVC.State (_dirty, _done, _filter, _hovered, _newTodo, _stat
 import React.Basic (JSX)
 import React.Basic.DOM (a, div, footer, h1, header, label, li, section, span, strong, text, ul, input) as R
 import Snap.Component (PComponent(..), (#!))
-import Snap.Component.SYTC (Cmp, Cmp', (<$>!), (<*>!))
+import Snap.Component.SYTC (Cmp, Cmp', (<$>!), (<*>!), withered)
 import Snap.Component.SYTC as C
 import Snap.React.Component ((|-), (|<), (|=), (|~))
 import Snap.React.Component as S
@@ -30,31 +27,33 @@ import Snap.React.Component as S
 -- The editor for todo items
 editor :: Cmp' Effect JSX Todo
 editor = C.ado
-  t     <- S.transacted
-           { change: S.edited
-           , save  : S.enterPressed
-           , revert: S.escapePressed
-           } #! T._state
-  focus <- S.focused #! T._dirty
-  in R.input |~ t.change |~ t.save |~ t.revert |~ focus $ { className: "edit" }
+  t <- modificatons #! T._state
+  f <- S.focused    #! T._dirty
+  in R.input |~ t.change |~ t.save |~ t.revert |~ f $ { className: "edit" }
+  where
+  modificatons = S.transacted
+    { change: S.edited
+    , save  : S.enterPressed
+    , revert: S.escapePressed
+    }
 
 -- The renderer for todo items when they're not being edited
 -- Accepts some conditionally rendered content that will be
 -- shown when hovering the todo
 viewer :: Cmp' Effect (JSX -> JSX) Todo
 viewer = C.ado
-  checkbox  <- S.checkbox    #! T._done
-  text      <- S.text        #! T._value
-  veil      <- S.conditional #! T._hovered
-  clickable <- S.clicked     #! P.rmap (const true) >>> T._dirty
-  hoverable <- S.hovering    #! T._hovered
+  chck <- S.checkbox    #! T._done
+  text <- S.text        #! T._value
+  veil <- S.conditional #! T._hovered
+  ckbl <- S.clicked     #! P.rmap (const true) >>> T._dirty
+  hvbl <- S.hovering    #! T._hovered
   in
   \extra ->
     R.div
-    |~ hoverable
+    |~ hvbl
     |= { className: "view" }
-    |< [ checkbox { className: "toggle" }
-       , R.label |~ clickable |- text
+    |< [ chck { className: "toggle" }
+       , R.label |~ ckbl |- text
        , veil extra
        ]
 
@@ -76,13 +75,6 @@ listItem f = li
   where
   li _ Nothing  _ = mempty
   li _ (Just t) v = R.li |= { className: T.className f t } |- v
-
--- Given a component focusing on whether a component is visible
-withered :: forall m v x. Monoid v => Cmp' m v (Maybe x) -> Cmp' m v (Array x)
-withered cmp u s = foldMapWithIndex (\k mt -> cmp (go k) mt) (Just <$> s)
-  where
-  go k Nothing  = u $ compact $ mapWithIndex (\i x -> if k == i then Nothing else Just x) s
-  go k (Just t) = u $ mapWithIndex (\i x -> if k == i then t else x) s
 
 -- A list of todos, which can delete themselves from the list
 todos :: Cmp' Effect JSX App

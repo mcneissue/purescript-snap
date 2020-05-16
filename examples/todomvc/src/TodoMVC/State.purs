@@ -61,7 +61,7 @@ className :: Filter -> Todo -> String
 className f t =
      (if isJust t.modification then " editing "   else "")
   <> (if t.done                then " completed " else "")
-  <> (if (shouldHide f t)    then " hidden "    else "")
+  <> (if (shouldHide f t)      then " hidden "    else "")
 
 type App =
   { newTodo :: InputState
