@@ -20,6 +20,6 @@
   },
   "devDependencies": {
     "parcel-bundler": "^1.12.4",
-    "purty": "^4.5.2"
+    "purty": "^4.6.0"
   }
 }
