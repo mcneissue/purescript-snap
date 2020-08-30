@@ -2,8 +2,6 @@ module Data.Record.Choose (HasField, hasField, getField, choose) where
 
 import Prelude
 
-import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
 import Data.Symbol (class IsSymbol, SProxy, reflectSymbol)
 import Data.Variant (Variant)
 import Data.Variant.Internal (VariantRep(..))
