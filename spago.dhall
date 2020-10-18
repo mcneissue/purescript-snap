@@ -12,6 +12,7 @@ You can edit this file as you like.
     , "profunctor-lenses"
     , "react"
     , "react-basic"
+    , "react-basic-dom"
     , "avar"
     , "variant"
     , "typelevel-prelude"

@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Either (Either(..))
 import Data.Newtype (un)
-import Data.Profunctor.Traverse (foldDemux)
+import Data.Profunctor.Traverse (sequenceDemux)
 import Data.Record.Choose (choose)
 import Data.Symbol (SProxy(..))
 import Data.Tuple.Nested ((/\))
@@ -51,7 +51,7 @@ _404 :: Cmp Aff (Aff JSX) RouteError Route
 _404 put err = pure $ R.text $ "Invalid route: \"" <> show err <> "\". Redirecting in 5 seconds..."
 
 page :: Cmp Aff (Aff JSX) (Variant (PageState ())) (Variant (PageUpdate ()))
-page = un ρ $ foldDemux
+page = un ρ $ sequenceDemux
   { root:     ρ $ root              # C.map pure
   , todomvc:  ρ $ TodoMvc.app       # C.map pure # contraHoist launchAff_
   , cattron:  ρ $ CatTron.app                    # contraHoist launchAff_

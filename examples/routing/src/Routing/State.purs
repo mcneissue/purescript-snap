@@ -3,7 +3,7 @@ module Examples.Routing.State (module Examples.Routing.State, module ST) where
 import Prelude
 
 import Data.Profunctor.Monoidal (mono)
-import Data.Profunctor.Traverse (foldSplice)
+import Data.Profunctor.Traverse (sequenceSplice)
 import Data.Variant (Variant)
 import Effect.AVar (AVar)
 import Effect.Aff (Aff)
@@ -27,4 +27,4 @@ snapper av = ado
   transact <- Transactional.snapper av
   reducer  <- Reducer.snapper av
   in
-  foldSplice { nav, root, todomvc, cattron, transact, reducer }
+  sequenceSplice { nav, root, todomvc, cattron, transact, reducer }

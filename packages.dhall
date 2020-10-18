@@ -112,43 +112,41 @@ let mkPackage =
       https://raw.githubusercontent.com/purescript/package-sets/psc-0.13.0-20190626/src/mkPackage.dhall sha256:0b197efa1d397ace6eb46b243ff2d73a3da5638d8d0ac8473e8e4a8fc528cf57
 
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.13.4-20191110/packages.dhall sha256:563a7f694e18e6399f7f6d01f5b7e3c3345781655d99945768f48e458feb93a4
+      https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20201007/packages.dhall sha256:35633f6f591b94d216392c9e0500207bb1fec42dd355f4fecdfd186956567b6b
 
 let overrides =
       { effect =
               upstream.effect
-          //  { repo =
-                  "https://github.com/masaeedu/purescript-effect.git"
-              , version =
-                  "semigroup"
+          //  { repo = "https://github.com/mcneissue/purescript-effect.git"
+              , version = "semigroup"
               }
       }
 
 let additions =
       { record-optics-extra =
           let manifest =
-                https://raw.githubusercontent.com/masaeedu/purescript-record-optics-extra/master/spago.dhall sha256:bba75d2ecde08251b3ae35c647d316bc51bb0aa98a04bd8d58573e77ea55977d
-          
+                https://raw.githubusercontent.com/mcneissue/purescript-record-optics-extra/v0.1.0/spago.dhall sha256:eb00c7cd61401d760b4645899b8d692e623caa475653ded7b8a6dafe2d15e292
+
           in  mkPackage
                 manifest.dependencies
-                "https://github.com/masaeedu/purescript-record-optics-extra.git"
-                "master"
+                "https://github.com/mcneissue/purescript-record-optics-extra.git"
+                "v0.1.0"
       , profunctor-traverse =
           let manifest =
-                https://raw.githubusercontent.com/jlavelle/purescript-profunctor-traverse/master/spago.dhall sha256:bba75d2ecde08251b3ae35c647d316bc51bb0aa98a04bd8d58573e77ea55977d
-          
+                https://raw.githubusercontent.com/mcneissue/purescript-profunctor-traverse/v0.1.0/spago.dhall sha256:7136013475629bdb7a1e260a218eee5ed51b3cbb79d3ee82ef82db57a2f42a1b
+
           in  mkPackage
                 manifest.dependencies
-                "https://github.com/jlavelle/purescript-profunctor-traverse.git"
-                "5068e90b723a784ca60753c301b46cd4c1fe77bd"
+                "https://github.com/mcneissue/purescript-profunctor-traverse.git"
+                "v0.1.0"
       , profunctor-extra =
           let manifest =
-                https://raw.githubusercontent.com/masaeedu/purescript-profunctor-extra/master/spago.dhall sha256:bba75d2ecde08251b3ae35c647d316bc51bb0aa98a04bd8d58573e77ea55977d
-          
+                https://raw.githubusercontent.com/mcneissue/purescript-profunctor-extra/v0.1.0/spago.dhall sha256:9052f2ac1e76d2d564da57333276ad2d7e83c8ff0b21d94dbebacfe5dce42489
+
           in  mkPackage
                 manifest.dependencies
-                "https://github.com/masaeedu/purescript-profunctor-extra.git"
-                "691eef88ceb830c04f025305d37457f8c048c4bf"
+                "https://github.com/mcneissue/purescript-profunctor-extra.git"
+                "v0.1.0"
       }
 
 in  upstream // overrides // additions

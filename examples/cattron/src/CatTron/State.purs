@@ -2,10 +2,10 @@ module Examples.CatTron.State where
 
 import Prelude
 
-import Affjax (printError)
+import Affjax (printError, Error)
 import Affjax as AX
 import Affjax.ResponseFormat (json)
-import Data.Argonaut (Json, decodeJson, (.:))
+import Data.Argonaut (Json, decodeJson, (.:), JsonDecodeError)
 import Data.Either (Either(..), either)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -14,6 +14,7 @@ import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Snap (Snapper')
 import Snap.React (affSnapper_)
+import Data.Bifunctor as Bifunctor
 
 data State = Loading | Error String | Gif String
 
@@ -38,7 +39,7 @@ randomGifUrl = do
   baseUrl = "https://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag="
 
 decodeImageUrl :: Json -> Either String String
-decodeImageUrl s = do
+decodeImageUrl s = Bifunctor.lmap show $ do
   obj <- decodeJson s
   dat <- obj .: "data"
   url <- dat .: "image_url"
