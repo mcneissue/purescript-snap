@@ -3,7 +3,7 @@ Welcome to a Spago project!
 You can edit this file as you like.
 -}
 { sources =
-    [ "src/**/*.purs", "test/**/*.purs", "examples/**/*.purs" ]
+    [ "src/**/*.purs", "test/**/*.purs" ]
 , name =
     "snap"
 , dependencies =
@@ -35,4 +35,6 @@ You can edit this file as you like.
     ]
 , packages =
     ./packages.dhall
+, version = "v0.1.0"
+, repository = "https://github.com/mcneissue/purescript-snap"
 }
