@@ -11,7 +11,7 @@ import Examples.TodoMVC.State (snapper)
 import Examples.TodoMVC.UI (app)
 import Snap (encapsulate, snap)
 import Snap.React (reactTargetM)
-import Snap.Component.SYTC (contraHoist)
+import Snap.Component.SYTC (contraHoist_)
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -34,4 +34,4 @@ main = do
     snapper <- snapper av
     let target = reactTargetM e av
     -- Snap everything together
-    snap (encapsulate snapper $ contraHoist launchAff_ $ app) target
+    snap (encapsulate snapper $ contraHoist_ launchAff_ $ app) target

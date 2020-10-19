@@ -10,7 +10,7 @@ import Effect.Exception (throwException)
 import Examples.CatTron.State (snapper)
 import Examples.CatTron.UI (app)
 import Snap (encapsulate, snap)
-import Snap.Component.SYTC (contraHoist, map) as C
+import Snap.Component.SYTC (contraHoist_, map) as C
 import Snap.React (reactTargetM)
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
@@ -33,6 +33,6 @@ main = do
     -- Create the state manager and target from the resources above
     snapper <- snapper av
     let target = reactTargetM e av
-    let cmp = C.map join $ encapsulate snapper $ C.contraHoist launchAff_ $ app
+    let cmp = C.map join $ encapsulate snapper $ C.contraHoist_ launchAff_ $ app
     -- Snap everything together
     snap cmp target

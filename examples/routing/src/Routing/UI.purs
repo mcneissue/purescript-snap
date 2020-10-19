@@ -23,7 +23,7 @@ import React.Basic.DOM as R
 import Record (delete)
 import Routing.Duplex.Parser (RouteError)
 import Snap.Component (ρ)
-import Snap.Component.SYTC (Cmp, contraHoist, (||))
+import Snap.Component.SYTC (Cmp, contraHoist_, (||))
 import Snap.Component.SYTC as C
 import Snap.React.Component ((|-), (|<), (|=))
 
@@ -53,9 +53,9 @@ _404 put err = pure $ R.text $ "Invalid route: \"" <> show err <> "\". Redirecti
 page :: Cmp Aff (Aff JSX) (Variant (PageState ())) (Variant (PageUpdate ()))
 page = un ρ $ sequenceDemux
   { root:     ρ $ root              # C.map pure
-  , todomvc:  ρ $ TodoMvc.app       # C.map pure # contraHoist launchAff_
-  , cattron:  ρ $ CatTron.app                    # contraHoist launchAff_
-  , transact: ρ $ Transactional.app # C.map pure # contraHoist launchAff_
+  , todomvc:  ρ $ TodoMvc.app       # C.map pure # contraHoist_ launchAff_
+  , cattron:  ρ $ CatTron.app                    # contraHoist_ launchAff_
+  , transact: ρ $ Transactional.app # C.map pure # contraHoist_ launchAff_
   , reducer:  ρ $ Reducer.app       # C.map pure
   }
 

@@ -18,7 +18,7 @@ import Examples.TransactionalForm.State as Transactional
 import Snap (Snapper, hoist)
 import Snap.React (route)
 
-snapper :: AVar Unit -> Aff (Snapper Aff (Variant Update) (Record State))
+snapper :: AVar Unit -> Aff (Snapper Aff Unit (Variant Update) (Record State))
 snapper av = ado
   nav      <- pure $ hoist liftEffect $ route parser
   root     <- pure $ mono

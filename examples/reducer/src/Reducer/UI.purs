@@ -44,4 +44,4 @@ delayer put = go put
            ]
 
 fromEffCmp :: forall v s u. Cmp Effect v s u -> Cmp Aff v s u
-fromEffCmp = C.contraHoist launchAff_
+fromEffCmp = C.contraHoist_ launchAff_

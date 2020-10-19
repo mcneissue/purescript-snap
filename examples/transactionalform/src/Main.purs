@@ -11,7 +11,7 @@ import Examples.TransactionalForm.State (snapper)
 import Examples.TransactionalForm.UI (app)
 import Snap (encapsulate, snap)
 import Snap.React (reactTargetM)
-import Snap.Component.SYTC (contraHoist)
+import Snap.Component.SYTC (contraHoist_)
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
@@ -33,6 +33,6 @@ main = do
     -- Create the state manager and target from the resources above
     snapper <- snapper av
     let target = reactTargetM e av
-    let cmp = encapsulate snapper $ contraHoist launchAff_ $ app
+    let cmp = encapsulate snapper $ contraHoist_ launchAff_ $ app
     -- Snap everything together
     snap cmp target

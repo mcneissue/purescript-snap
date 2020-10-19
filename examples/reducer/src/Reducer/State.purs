@@ -26,7 +26,7 @@ type State = Int /\ Maybe String
 
 counterSnapper :: forall m.
   MonadAff m =>
-  AVar Unit -> m (Snapper m CounterAction Int)
+  AVar Unit -> m (Snapper m Unit CounterAction Int)
 counterSnapper = affSnapper reducer init
   where
   init = 0
@@ -38,7 +38,7 @@ affDelay t a = forkAff $ delay (Milliseconds t) *> a
 
 delayerSnapper :: forall m.
   MonadAff m =>
-  AVar Unit -> m (Snapper m DelayerAction (Maybe String))
+  AVar Unit -> m (Snapper m Unit DelayerAction (Maybe String))
 delayerSnapper = affSnapper reducer init
   where
   init = Just "Click the button to launch a delayed request"
@@ -47,5 +47,5 @@ delayerSnapper = affSnapper reducer init
     pure Nothing
   reducer (Loaded s) _ = pure $ Just s
 
-snapper :: forall m. MonadAff m => AVar Unit -> m (Snapper m Action State)
+snapper :: forall m. MonadAff m => AVar Unit -> m (Snapper m Unit Action State)
 snapper av = (|&) <$> counterSnapper av <*> delayerSnapper av
