@@ -1,16 +1,11 @@
 {
   "scripts": {
     "build": "spago build",
-    "build:todomvc": "spago bundle-app --main Examples.TodoMVC.Main --to bundle/todomvc/bundle.js",
-    "todomvc": "npm run build:todomvc && npx parcel examples/todomvc/index.html",
-    "build:transactionalform": "spago bundle-app --main Examples.TransactionalForm.Main --to bundle/transactionalform/bundle.js",
-    "transactionalform": "npm run build:transactionalform && npx parcel examples/transactionalform/index.html",
-    "build:cattron": "spago bundle-app --main Examples.CatTron.Main --to bundle/cattron/bundle.js",
-    "cattron": "npm run build:cattron && npx parcel examples/cattron/index.html",
-    "build:reducer": "spago bundle-app --main Examples.Reducer.Main --to bundle/reducer/bundle.js",
-    "reducer": "npm run build:reducer && npx parcel examples/reducer/index.html",
-    "build:routing": "spago bundle-app --main Examples.Routing.Main --to bundle/routing/bundle.js",
-    "routing": "npm run build:routing && npx parcel examples/routing/index.html"
+    "todomvc": "fish scripts/mkExample.fish Examples.TodoMVC.Main todomvc",
+    "transactionalform": "fish scripts/mkExample.fish Examples.TransactionalForm.Main transactionalform",
+    "cattron": "fish scripts/mkExample.fish Examples.CatTron.Main cattron",
+    "reducer": "fish scripts/mkExample.fish Examples.Reducer.Main reducer",
+    "routing": "fish scripts/mkExample.fish Examples.Routing.Main routing"
   },
   "dependencies": {
     "react": "^16.13.1",
