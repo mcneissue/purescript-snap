@@ -3,17 +3,17 @@ module Snap.Component.SYTC where
 import Control.Applicative (class Applicative)
 import Control.Apply (lift2) as A
 import Control.Category (class Category, class Semigroupoid, (<<<), (>>>))
-import Data.Array (mapWithIndex)
-import Data.Compactable (compact)
+import Data.Compactable (compact, class Compactable)
 import Data.Either (Either(..), either)
 import Data.Eq ((==))
-import Data.FoldableWithIndex (foldMapWithIndex)
+import Data.FoldableWithIndex (foldMapWithIndex, class FoldableWithIndex)
+import Data.FunctorWithIndex (mapWithIndex, class FunctorWithIndex)
 import Data.Functor.Compose (Compose(..))
 import Data.Maybe (Maybe(..))
 import Data.Newtype (un)
 import Data.Tuple (Tuple(..), curry, fst, snd, swap, uncurry)
 import Data.Tuple.Nested (type (/\), (/\))
-import Prelude (Unit, unit, class Semigroup, class Monoid, (<>), ($), (>>=), flip, const, Void, absurd)
+import Prelude (Unit, unit, class Semigroup, class Monoid, class Eq, (<>), ($), (>>=), flip, const, Void, absurd)
 import Prelude as P
 
 type Cmp m v s u
@@ -163,10 +163,14 @@ when f c set = c set'
 echo :: forall m s u. Cmp m s s u
 echo _ s = s
 
--- Given a component that can display a possible value, create a component that can
--- display a list of values
-withered :: forall m v x. Monoid v => Cmp' m v (Maybe x) -> Cmp' m v (Array x)
-withered cmp u s = foldMapWithIndex (\k mt -> cmp (go k) mt) (Just P.<$> s)
+withered :: forall i f m v x
+          . Eq i
+         => FoldableWithIndex i f
+         => FunctorWithIndex i f
+         => Compactable f
+         => Monoid v
+         => Cmp' m v (Maybe x) -> Cmp' m v (f x)
+withered cmp u s = foldMapWithIndex (\k -> cmp (go k) <<< Just) s
   where
-  go k Nothing  = u $ compact $ mapWithIndex (\i x -> if k == i then Nothing else Just x) s
-  go k (Just t) = u $ mapWithIndex (\i x -> if k == i then t else x) s
+  go k mx = u $ compact $ mapWithIndex (\i x -> if k == i then mx else Just x) s
+
