@@ -22,7 +22,7 @@ import Web.Storage.Storage as Storage
 
 refSnapper :: forall s m.
   MonadAff m =>
-  Ref s -> AVar Unit -> Snapper m s s
+  Ref s -> AVar Unit -> Snapper m Unit s s
 refSnapper ref sync = Snapper { get, put }
   where
   get = liftEffect $ Ref.read ref
@@ -33,14 +33,14 @@ refSnapper ref sync = Snapper { get, put }
 
 affSnapper :: forall m u s.
   MonadAff m =>
-  (u -> s -> m s) -> s -> AVar Unit -> m (Snapper m u s)
+  (u -> s -> m s) -> s -> AVar Unit -> m (Snapper m Unit u s)
 affSnapper red s sync = do
   r <- liftEffect $ Ref.new s
   pure $ reduced red $ refSnapper r sync
 
 affSnapper_ :: forall m s.
   MonadAff m =>
-  s -> AVar Unit -> m (Snapper m s s)
+  s -> AVar Unit -> m (Snapper m Unit s s)
 affSnapper_ = affSnapper $ \s _ -> pure s
 
 url :: forall m.
@@ -50,12 +50,12 @@ url = Snapper { get: liftEffect $ getHash, put: liftEffect <<< setHash }
 
 route :: forall m i o.
   MonadEffect m =>
-  RouteDuplex i o -> Snapper m i (Either RouteError o)
+  RouteDuplex i o -> Snapper m Unit i (Either RouteError o)
 route r = dimap (print r) (parse r) $ url
 
 localstorage :: forall m.
   MonadEffect m =>
-  String -> m (Snapper m String (Maybe String))
+  String -> m (Snapper m Unit String (Maybe String))
 localstorage k = do
   w <- liftEffect $ window
   s <- liftEffect $ localStorage w

@@ -31,10 +31,11 @@ You can edit this file as you like.
     , "profunctor-extra"
     , "web-storage"
     , "simple-json"
+    , "machines"
     , "kishimen"
     ]
 , packages =
     ./packages.dhall
-, version = "v0.1.0"
+, version = "mealy"
 , repository = "https://github.com/mcneissue/purescript-snap"
 }
