@@ -11,16 +11,16 @@ import Data.Profunctor.Monoidal (class Monoidal, class Semigroupal, class Unital
 import Data.Profunctor.Strong (class Strong)
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
-import Snap.Component.SYTC (Cmp)
+import Snap.Component.SYTC (Component)
 import Snap.Component.SYTC as C
 
 -- Profunctor wrapper
 newtype PComponent m v b s u
-  = PComponent (Cmp m v b s u)
+  = PComponent (Component m v b s u)
 
 derive instance newtypeComponent :: Newtype (PComponent m v b s u) _
 
-ρ :: forall m v b s u. Cmp m v b s u -> PComponent m v b s u
+ρ :: forall m v b s u. Component m v b s u -> PComponent m v b s u
 ρ = PComponent
 
 type PComponent' m v s
@@ -86,23 +86,23 @@ instance tetUnital :: Monoid v => Unital (->) Unit Void Unit (PComponent m v b) 
 
 instance tetMonoidal :: Monoid v => Monoidal (->) Tuple Unit Either Void Tuple Unit (PComponent m v b)
 
-focus :: forall m v b s u x y. Newtype x y => (PComponent m v b s u -> x) -> Cmp m v b s u -> y
+focus :: forall m v b s u x y. Newtype x y => (PComponent m v b s u -> x) -> Component m v b s u -> y
 focus = under ρ
 
 infixl 1 focus as $!
 
-flippedFocus :: forall m v b s u x y. Newtype x y => Cmp m v b s u -> (PComponent m v b s u -> x) -> y
+flippedFocus :: forall m v b s u x y. Newtype x y => Component m v b s u -> (PComponent m v b s u -> x) -> y
 flippedFocus = flip focus
 
 infixl 1 flippedFocus as #!
 
 -- Monad wrapper
 newtype MComponent b s u m v
-  = MComponent (Cmp m v b s u)
+  = MComponent (Component m v b s u)
 
 derive instance newtypeMComponent :: Newtype (MComponent b s u m v) _
 
-μ :: forall b s u m v. Cmp m v b s u -> MComponent b s u m v
+μ :: forall b s u m v. Component m v b s u -> MComponent b s u m v
 μ = MComponent
 
 instance functorMComponent :: Functor (MComponent b s u m) where
@@ -126,12 +126,12 @@ instance applicativeMComponent :: Applicative (MComponent b s u m) where
     actual = C.pure
 
 newtype CComponent m b s u c x y
-  = CComponent (Cmp m (c x y) b s u)
+  = CComponent (Component m (c x y) b s u)
 
 derive instance newtypeCComponent :: Newtype (CComponent m b s u c x y) _
 
 -- Category wrapper
-κ :: forall m b s u c x y. Cmp m (c x y) b s u -> CComponent m b s u c x y
+κ :: forall m b s u c x y. Component m (c x y) b s u -> CComponent m b s u c x y
 κ = CComponent
 
 instance semigroupoidCComponent :: Semigroupoid c => Semigroupoid (CComponent m b s u c) where

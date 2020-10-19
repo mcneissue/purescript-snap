@@ -22,7 +22,7 @@ import React.Basic.Events (EventFn, SyntheticEvent)
 import React.Basic.Events (handler, handler_) as R
 import Record as RD
 import Snap.Component ((#!), ($!))
-import Snap.Component.SYTC (Cmp, Cmp', Cmp'')
+import Snap.Component.SYTC (Component, Cmp', Cmp'')
 import Snap.Component.SYTC as C
 
 -- TODO What can we use Cmp's `b` parameter for here?
@@ -51,7 +51,7 @@ setChild f c = setChildren f [c]
 infixr 6 setChild as |-
 
 -- Extensible components
-type Affordance r s u = forall ri ro. AppendRecord ri r ro => Cmp Effect ({ | ri } -> { | ro }) Unit s u
+type Affordance r s u = forall ri ro. AppendRecord ri r ro => Component Effect ({ | ri } -> { | ro }) Unit s u
 type Affordance' r s = Affordance r s s
 
 -- Graft a boolean state to whether a particular element is hovered
@@ -157,8 +157,8 @@ tabPressed = keypressed # C.when ((==) "Tab")
 --
 -- produces an affordance that emits transactional edits of the given value
 transacted :: forall vr vs vc b s m.
-  { revert :: Cmp m vr b s _
-  , save   :: Cmp m vs b s _
+  { revert :: Component m vr b s _
+  , save   :: Component m vs b s _
   , change :: Cmp'' m vc b s
   | _
   } ->
@@ -173,13 +173,13 @@ transacted { change, save, revert } = atomically $! C.ado
 button :: forall s ri ro x.
   AppendRecord ri ( onClick :: EffectFn1 SyntheticEvent Unit ) ro =>
   Union ro x Props_button =>
-  Cmp Effect ({ | ri } -> R.JSX) Unit s Unit
+  Component Effect ({ | ri } -> R.JSX) Unit s Unit
 button = C.ado
   c <- clicked
   in R.button |~ c
 
 -- A text node that displays a string and never emits
-text :: forall m b u. Cmp m R.JSX b String u
+text :: forall m b u. Component m R.JSX b String u
 text _ = R.text
 
 -- A counter that manages a number
@@ -234,14 +234,14 @@ checkbox = C.ado
 img :: forall a b x u.
   Union a ( src :: String) b =>
   Union b x Props_img =>
-  Cmp Effect ({ | a } -> R.JSX) Unit String u
+  Component Effect ({ | a } -> R.JSX) Unit String u
 img _ src = R.img |= { src }
 
 -- A component that accepts a boolean and renders a provided
 -- element if it is true
-conditional :: forall m b u. Cmp m (R.JSX -> R.JSX) b Boolean u
+conditional :: forall m b u. Component m (R.JSX -> R.JSX) b Boolean u
 conditional _ = if _ then identity else const mempty
 
 -- Wrapper around text that can be attached to show-able things
-debug :: forall m b s u. Show s => Cmp m R.JSX b s u
+debug :: forall m b s u. Show s => Component m R.JSX b s u
 debug = C.lcmap show text
