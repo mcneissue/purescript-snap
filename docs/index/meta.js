@@ -1,1 +1,0 @@
-window.DocsSearchMeta = {"localPackageName":"snap-examples"}
