@@ -2,7 +2,7 @@ module Snap (module Snap, module C, module S) where
 
 import Prelude
 
-import Data.Machine.Mealy (MealyT, Step(..), runMealyT, mealy, stepMealy)
+import Data.Machine.Mealy (MealyT, Step(..), mealy, runMealyT)
 
 import Snap.Component as C
 import Snap.Snapper as S
@@ -20,7 +20,7 @@ rewrite f m = go m
     Halt -> pure Halt
     Emit b next -> f b <#> \c -> Emit c (go next)
 
-snap :: forall m v b
+snap :: forall m v
       . Monad m
      => Component m v Unit Unit Void
      -> MealyT m v Unit
