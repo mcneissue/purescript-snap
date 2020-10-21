@@ -36,6 +36,4 @@ You can edit this file as you like.
     ]
 , packages =
     ./packages.dhall
-, version = "mealy"
-, repository = "https://github.com/mcneissue/purescript-snap"
 }

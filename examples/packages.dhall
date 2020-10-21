@@ -1,13 +1,7 @@
 let upstream = ../packages.dhall
 
-let snap = ../spago.dhall
-
 let additions =
-      { snap =
-        { dependencies = snap.dependencies
-        , version = snap.version
-        , repo = snap.repository
-        }
+      { snap = ../spago.dhall as Location
       }
 
 in  upstream // additions
