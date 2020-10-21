@@ -15,14 +15,8 @@ You can edit this file as you like.
     , "react-basic-dom"
     , "avar"
     , "variant"
-    , "typelevel-prelude"
-    , "heterogeneous"
-    , "const"
-    , "record"
     , "record-optics-extra"
     , "filterable"
-    , "debug"
-    , "type-equality"
     , "affjax"
     , "argonaut"
     , "routing-duplex"
@@ -30,9 +24,7 @@ You can edit this file as you like.
     , "profunctor-traverse"
     , "profunctor-extra"
     , "web-storage"
-    , "simple-json"
     , "machines"
-    , "kishimen"
     ]
 , packages =
     ./packages.dhall
