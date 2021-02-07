@@ -7,7 +7,6 @@ pkgs.mkShell {
     purescript
     nodejs
     nodePackages.purescript-language-server
-    spago
     fish
   ];
 }
