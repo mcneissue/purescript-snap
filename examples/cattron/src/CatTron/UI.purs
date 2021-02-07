@@ -2,24 +2,21 @@ module Examples.CatTron.UI where
 
 import Prelude
 
-import Data.Either (either)
-import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
-import Effect.Aff (Aff, delay)
-import Examples.CatTron.State (randomGifUrl)
+import Examples.CatTron.State (AppTransition, AppState)
 import React.Basic (JSX)
 import React.Basic.DOM as R
-import React.Basic.Events (handler_)
-import Snap.React.Component ((|-), (|<), (|=))
+import React.Basic.DOM.Events (targetValue)
+import React.Basic.Events (handler)
 import Snap.Component.SYTC (Cmp)
 import Snap.Component.SYTC as C
-import Examples.CatTron.State (AppTransition, AppState)
 import Snap.Machine.FeedbackLoop (State(..), Transition(..))
+import Snap.React.Component ((|-), (|<), (|=))
 
 reload :: forall s. Cmp Effect JSX s AppTransition
 reload set _ = R.button |= { onClick } |- R.text "MOAR"
   where
-  onClick = handler_ $ set Reload
+  onClick = handler targetValue $ \_ -> set Reload
 
 view :: forall u. Cmp Effect JSX AppState u
 view _ Loading   = R.p |- R.text "Loading..."
