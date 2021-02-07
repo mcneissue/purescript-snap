@@ -54,11 +54,10 @@ encapsulate :: forall m v s u.
   s -> ContT Unit m v
 encapsulate machine cmp = loop
   where
-  loop s = ContT \cb ->
-    case machine s of
-      task /\ transition ->
-        let recurse u = runContT (loop $ transition u) cb
-        in liftAff (delay $ Milliseconds 0.0) *> cb (cmp recurse s) *> runContT task recurse
+  loop s = case machine s of
+    task /\ transition -> ContT $ \cb ->
+      let recurse u = runContT (loop $ transition u) cb
+      in cb (cmp recurse s) *> runContT task recurse
 
 runReact :: forall m. MonadEffect m => Element -> ContT Unit m JSX -> m Unit
 runReact e (ContT f) = f \v -> liftEffect $ React.render v e
