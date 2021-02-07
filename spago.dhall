@@ -34,7 +34,5 @@ You can edit this file as you like.
     , "kishimen"
     ]
 , packages =
-    ./packages.dhall
-, version = "machines"
-, repository = "https://github.com/mcneissue/purescript-snap"
+    ./examples/packages.dhall
 }
