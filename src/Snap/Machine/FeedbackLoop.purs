@@ -12,7 +12,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (throwException)
 import React.Basic (JSX)
 import React.Basic.DOM as React
-import Snap.Component.SYTC (Cmp)
+import Snap.Component.SYTC (Cmp, contraHoist)
 import Snap.Machine.Type (Machine)
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
@@ -66,8 +66,7 @@ element id = do
   mc <- window >>= document <#> toNonElementParentNode >>= getElementById id
   maybe (throwException (error "Couldn't find root element")) pure mc
 
-simpleMain :: forall s u. String -> FeedbackLoop Unit Aff s u -> Cmp Aff JSX s u -> s -> Effect Unit
+simpleMain :: forall s u. String -> FeedbackLoop Unit Aff s u -> Cmp Effect JSX s u -> s -> Effect Unit
 simpleMain id machine cmp s = do
   elem <- element id
-  launchAff_ $ runReact elem $ encapsulate machine cmp s
-  
+  launchAff_ $ runReact elem $ encapsulate machine (contraHoist launchAff_ cmp) s
