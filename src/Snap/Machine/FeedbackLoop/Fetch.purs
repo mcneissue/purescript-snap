@@ -19,11 +19,11 @@ data Transition r e = Reload | Succeed r | Fail e
 cancelable :: ∀ a. AVar Unit -> Aff a -> Aff (Maybe a)
 cancelable av task = sequential $ parallel (Nothing <$ AVar.read av) <|> (Just <$> parallel task)
 
-machine :: ∀ res err.
+makeMachine :: ∀ r e.
   AVar Unit ->
-  Aff (Either err res) ->
-  FeedbackLoop Unit Aff (State res err) (Transition res err)
-machine avar load state = update /\ transition
+  Aff (Either e r) ->
+  FeedbackLoop Unit Aff (State r e) (Transition r e)
+makeMachine avar load state = update /\ transition
   where
   update = case state of
     Loading -> ContT \cb -> do
@@ -42,6 +42,12 @@ machine avar load state = update /\ transition
     Reload -> Loading
     Succeed r -> Success r
     Fail e -> Failure e
+
+machine :: ∀ e r. Aff (Either e r) -> Aff (FeedbackLoop Unit Aff (State r e) (Transition r e))
+machine load = do
+  avar <- AVar.empty
+  pure $ makeMachine avar load
+
 
 initialState :: ∀ r e. State r e
 initialState = Loading

@@ -10,7 +10,6 @@ import Data.Bifunctor as Bifunctor
 import Data.Either (Either(..), either)
 import Data.Time.Duration (Milliseconds(..))
 import Effect.Aff (Aff, delay)
-import Effect.Aff.AVar (AVar)
 import Snap.Machine.FeedbackLoop (FeedbackLoop)
 import Snap.Machine.FeedbackLoop.Fetch as Fetch
 
@@ -40,8 +39,8 @@ loadGif = do
   result <- randomGifUrl
   pure result
 
-gifLoader :: AVar Unit -> FeedbackLoop Unit Aff AppState AppTransition
-gifLoader avar = Fetch.machine avar loadGif
+machine :: Aff (FeedbackLoop Unit Aff AppState AppTransition)
+machine = Fetch.machine loadGif
 
 initialState :: AppState
 initialState = Fetch.initialState
