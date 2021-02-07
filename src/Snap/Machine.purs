@@ -2,16 +2,12 @@ module Snap.Machine where
 
 import Prelude
 
-import Snap.Machine.Step (Step)
 import Snap.Machine.Step as Step
+import Snap.Machine.Type (Machine)
 import Data.Either (Either(..), either)
 import Data.Either.Nested (type (\/))
 import Data.Tuple.Nested (type (/\), (/\))
 import Data.Bifunctor (bimap)
-
-type Coalgebra f a = a -> f a
-
-type Machine s i o = Coalgebra (Step i o) s
 
 mapO :: ∀ a b i s.
   (a -> b) -> Machine s i a -> Machine s i b
