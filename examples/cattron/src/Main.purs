@@ -13,4 +13,4 @@ import Snap.Machine.FeedbackLoop as FeedbackLoop
 main :: Effect Unit
 main = launchAff_ $ do
   avar <- AVar.empty
-  liftEffect $ FeedbackLoop.simpleMain "container" (State.gifLoader avar) UI.component FeedbackLoop.Loading
+  liftEffect $ FeedbackLoop.simpleMain "container" (State.gifLoader avar) UI.component State.initialState

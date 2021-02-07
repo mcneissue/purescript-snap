@@ -2,16 +2,11 @@ module Snap.Machine.FeedbackLoop where
 
 import Prelude
 
-import Control.Alt ((<|>))
 import Control.Monad.Cont (ContT(..), runContT)
-import Control.Parallel (sequential)
-import Data.Either (Either, either)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (maybe)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Effect.Aff (Aff, Fiber, error, forkAff, joinFiber, killFiber, launchAff_, parallel)
-import Effect.Aff.AVar (AVar)
-import Effect.Aff.AVar as AVar
+import Effect.Aff (Aff, error, launchAff_)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (throwException)
@@ -26,41 +21,6 @@ import Web.HTML.HTMLDocument (toNonElementParentNode)
 import Web.HTML.Window (document)
 
 type FeedbackLoop r m s u = Machine s u (ContT r m u)
-
--- example
-
-data State r e = Loading | Success r | Failure e
-data Transition r e = Reload | Succeed r | Fail e
-
-cancelable :: ∀ a. AVar Unit -> Aff a -> Aff (Maybe a)
-cancelable av task = sequential $ parallel (Nothing <$ AVar.read av) <|> (Just <$> parallel task)
-
-loader :: forall res err.
-  AVar Unit ->
-  Aff (Either err res) ->
-  FeedbackLoop Unit Aff (State res err) (Transition res err)
-loader avar load state = update /\ transition
-  where
-  update = case state of
-    Loading -> ContT \cb -> do
-      -- Cancel any previous requests
-      _ <- AVar.tryTake avar
-      AVar.put unit avar
-      -- Start new request
-      _ <- AVar.take avar
-      value <- cancelable avar load
-      case value of
-        Nothing -> pure unit
-        Just v -> either (cb <<< Fail) (cb <<< Succeed) v
-    Success r -> emptyCont
-    Failure e -> emptyCont
-  transition t = case t of
-    Reload -> Loading
-    Succeed r -> Success r
-    Fail e -> Failure e
-
-emptyCont :: forall x f a. Applicative f => Monoid x => ContT x f a
-emptyCont = ContT \_ -> pure mempty
 
 encapsulate :: forall m v s u.
   MonadAff m =>

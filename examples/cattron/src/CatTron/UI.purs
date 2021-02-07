@@ -9,7 +9,7 @@ import React.Basic.DOM as R
 import React.Basic.Events (handler_)
 import Snap.Component.SYTC (Cmp)
 import Snap.Component.SYTC as C
-import Snap.Machine.FeedbackLoop (State(..), Transition(..))
+import Snap.Machine.FeedbackLoop.Fetch (State(..), Transition(..))
 import Snap.React.Component ((|-), (|<), (|=))
 
 reload :: forall s. Cmp Effect JSX s AppTransition

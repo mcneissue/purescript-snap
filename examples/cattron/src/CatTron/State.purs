@@ -9,13 +9,13 @@ import Data.Argonaut (Json, decodeJson, (.:))
 import Data.Bifunctor as Bifunctor
 import Data.Either (Either(..), either)
 import Data.Time.Duration (Milliseconds(..))
-import Effect.Aff (Aff, delay, forkAff)
+import Effect.Aff (Aff, delay)
 import Effect.Aff.AVar (AVar)
 import Snap.Machine.FeedbackLoop (FeedbackLoop)
-import Snap.Machine.FeedbackLoop as FeedbackLoop
+import Snap.Machine.FeedbackLoop.Fetch as Fetch
 
-type AppState = FeedbackLoop.State String String
-type AppTransition = FeedbackLoop.Transition String String
+type AppState = Fetch.State String String
+type AppTransition = Fetch.Transition String String
 
 topic :: String
 topic = "cats"
@@ -41,4 +41,7 @@ loadGif = do
   pure result
 
 gifLoader :: AVar Unit -> FeedbackLoop Unit Aff AppState AppTransition
-gifLoader avar = FeedbackLoop.loader avar loadGif
+gifLoader avar = Fetch.machine avar loadGif
+
+initialState :: AppState
+initialState = Fetch.initialState
