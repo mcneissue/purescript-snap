@@ -9,7 +9,8 @@ import Data.Argonaut (Json, decodeJson, (.:))
 import Data.Bifunctor as Bifunctor
 import Data.Either (Either(..), either)
 import Data.Time.Duration (Milliseconds(..))
-import Effect.Aff (Aff, delay)
+import Effect.Aff (Aff, delay, forkAff)
+import Effect.Aff.AVar (AVar)
 import Snap.Machine.FeedbackLoop (FeedbackLoop)
 import Snap.Machine.FeedbackLoop as FeedbackLoop
 
@@ -24,7 +25,7 @@ randomGifUrl = do
   r <- (map <<< map) _.body $ AX.get json $ baseUrl <> topic
   pure $ either (Left <<< printError) decodeImageUrl r
   where
-  baseUrl = "https://api.giphy.com/v1/gifs/random?api_key=dc6zaTOxFJmzC&tag="
+  baseUrl = "https://api.giphy.com/v1/gifs/random?api_key=48o08S6XdWCosiQvS6RfM3Mh94uJYKVp&tag="
 
 decodeImageUrl :: Json -> Either String String
 decodeImageUrl s = Bifunctor.lmap show $ do
@@ -39,5 +40,5 @@ loadGif = do
   result <- randomGifUrl
   pure result
 
-gifLoader :: FeedbackLoop Unit Aff AppState AppTransition
-gifLoader = FeedbackLoop.loader loadGif
+gifLoader :: AVar Unit -> FeedbackLoop Unit Aff AppState AppTransition
+gifLoader avar = FeedbackLoop.loader avar loadGif
