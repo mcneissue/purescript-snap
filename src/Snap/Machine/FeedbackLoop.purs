@@ -2,24 +2,21 @@ module Snap.Machine.FeedbackLoop where
 
 import Prelude
 
-import Control.Alt (class Alt, (<|>))
 import Control.Apply (lift2)
 import Control.Monad.Cont (ContT(..), runContT)
 import Data.Either (Either(..), either)
 import Data.Either.Nested (type (\/))
 import Data.Maybe (maybe)
-import Data.Tuple.Nested ((/\))
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
-import Effect.Aff (Aff, ParAff, error, launchAff_)
+import Effect.Aff (Aff, ParAff, error)
 import Effect.Aff as Aff
-import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (throwException)
 import Effect.Ref as Ref
 import React.Basic (JSX)
 import React.Basic.DOM as React
-import Snap.Component.SYTC (Cmp, contraHoist)
+import Snap.Component.SYTC (Cmp)
 import Snap.Machine as Machine
 import Snap.Machine.Type (Machine)
 import Web.DOM (Element)
@@ -29,8 +26,6 @@ import Web.HTML.HTMLDocument (toNonElementParentNode)
 import Web.HTML.Window (document)
 
 type FeedbackLoop r m s u = Machine s u (ContT r m u)
-
--- foo :: Machine s u (ContT r m u1 /\ ContT r m u2) -> FeedbackLoop r m s (u1 \/ u2)
 
 splice :: forall r m s1 u1 s2 u2. Apply m => Semigroup r => FeedbackLoop r m s1 u1 -> FeedbackLoop r m s2 u2 -> FeedbackLoop r m (s1 /\ s2) (u1 \/ u2)
 splice f1 f2 (s1 /\ s2) = case f1 s1 /\ f2 s2 of
@@ -44,19 +39,6 @@ hoist n1 n2 f = Machine.mapO (hoistCont n1 n2) f
 
 hoistCont :: forall m n r. (m ~> n) -> (n ~> m) -> ContT r m ~> ContT r n
 hoistCont n1 n2 (ContT m) = ContT \cb -> n1 (m $ n2 <<< cb)
-
-affPar :: forall r s u. FeedbackLoop r Aff s u -> FeedbackLoop r ParAff s u
-affPar = hoist Aff.parallel Aff.sequential
-
-affSeq :: forall r s u. FeedbackLoop r ParAff s u -> FeedbackLoop r Aff s u
-affSeq = hoist Aff.sequential Aff.parallel
-
-spliceAff :: forall r s1 u1 s2 u2. 
-  Semigroup r =>
-  FeedbackLoop r Aff s1 u1 -> 
-  FeedbackLoop r Aff s2 u2 ->
-  FeedbackLoop r Aff (s1 /\ s2) (u1 \/ u2)
-spliceAff f1 f2 = affSeq $ splice (affPar f1) (affPar f2)
 
 encapsulatePure :: forall m v s u.
   Monad m =>
