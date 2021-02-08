@@ -3,23 +3,23 @@ module Examples.Reducer.UI where
 import Prelude
 
 import Data.Either (Either(..))
-import Data.Maybe (Maybe, fromMaybe)
 import Data.Tuple (fst, snd)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
-import Examples.Reducer.State (CounterAction(..), DelayerAction(..), State)
+import Examples.Reducer.State (Action, CounterAction(..), DState(..), DUpdate(..), State)
 import React.Basic (JSX)
 import React.Basic.DOM as R
 import Snap.Component.SYTC (Cmp)
 import Snap.Component.SYTC as C
-import Snap.React.Component ((|<), (|-))
+import Snap.React.Component (debug, (|-), (|<))
 import Snap.React.Component as RC
 
-app :: Cmp Aff JSX State (Either CounterAction DelayerAction)
-app = C.ado
-  cntr <- fromEffCmp $ counter # C.dimap fst Left
+component :: Cmp Effect JSX State Action
+component = C.ado
+  cntr <- counter # C.dimap fst Left
   dlyr <- delayer # C.dimap snd Right
-  in R.div |< [ cntr, dlyr ]
+  dbg <- debug
+  in R.div |< [ cntr, dlyr, dbg ]
 
 counter :: Cmp Effect JSX Int CounterAction
 counter = C.ado
@@ -32,16 +32,19 @@ counter = C.ado
        , dec |- R.text "-"
        ]
 
-delayer :: Cmp Aff JSX (Maybe String) DelayerAction
+delayer :: Cmp Effect JSX DState DUpdate
 delayer put = go put
   where
     go = C.ado
-      load <- fromEffCmp $ RC.button # C.rmap (const $ Load put)
-      txt  <- RC.text # C.lcmap (fromMaybe "Loading...")
+      load <- RC.button # C.rmap (const Load)
+      txt  <- RC.text # C.lcmap mkLabel
       in R.div
-        |< [ load |- R.text "Click Me"
+        |< [ load |- R.text "Click Me Pls"
            , txt
            ]
+    mkLabel s = case s of
+      Loading -> "Loading"
+      Success r -> r
 
 fromEffCmp :: forall v s u. Cmp Effect v s u -> Cmp Aff v s u
 fromEffCmp = C.contraHoist launchAff_

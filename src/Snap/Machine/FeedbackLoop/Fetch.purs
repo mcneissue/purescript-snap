@@ -11,7 +11,7 @@ import Data.Tuple.Nested ((/\))
 import Effect.Aff (Aff)
 import Effect.Aff.AVar (AVar)
 import Effect.Aff.AVar as AVar
-import Snap.Machine.FeedbackLoop (FeedbackLoop)
+import Snap.Machine.FeedbackLoop (FeedbackLoop, emptyCont)
 
 data State r e = Loading | Success r | Failure e
 data Transition r e = Reload | Succeed r | Fail e
@@ -48,9 +48,5 @@ machine load = do
   avar <- AVar.empty
   pure $ makeMachine avar load
 
-
 initialState :: ∀ r e. State r e
 initialState = Loading
-
-emptyCont :: ∀ x f a. Applicative f => Monoid x => ContT x f a
-emptyCont = ContT \_ -> pure mempty

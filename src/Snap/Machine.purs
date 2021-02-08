@@ -48,10 +48,10 @@ independent :: ∀ s1 s2 i1 i2 o1 o2.
 independent (m1 /\ m2) (s1 /\ s2) = case m1 s1 /\ m2 s2 of
   ((o1 /\ t1) /\ (o2 /\ t2)) -> (o1 /\ o2) /\ bimap t1 t2
 
-splice :: ∀ s i1 i2 o1 o2.
-  Machine s i1 o1 /\ Machine s i2 o2 -> Machine s (i1 \/ i2) (o1 /\ o2)
-splice (m1 /\ m2) s = case m1 s /\ m2 s of
-  ((o1 /\ t1) /\ (o2 /\ t2)) -> (o1 /\ o2) /\ either t1 t2
+splice :: ∀ s1 s2 i1 i2 o1 o2.
+  Machine s1 i1 o1 /\ Machine s2 i2 o2 -> Machine (s1 /\ s2) (i1 \/ i2) (o1 /\ o2)
+splice (m1 /\ m2) (s1 /\ s2) = case m1 s1 /\ m2 s2 of
+  ((o1 /\ t1) /\ (o2 /\ t2)) -> (o1 /\ o2) /\ either (\i1 -> t1 i1 /\ s2) (\i2 -> s1 /\ t2 i2)
 
 demux :: ∀ s1 s2 i1 i2 o1 o2.
   Machine s1 i1 o1 /\ Machine s2 i2 o2 -> Machine (s1 \/ s2) (i1 \/ i2) (o1 \/ o2)
