@@ -13,6 +13,7 @@ import Snap.Component.SYTC (Cmp)
 import Snap.Component.SYTC as C
 import Snap.React.Component (debug, (|-), (|<))
 import Snap.React.Component as RC
+import Snap.Mealy as Mealy
 
 component :: Cmp Effect JSX State Action
 component = C.ado
@@ -36,15 +37,19 @@ delayer :: Cmp Effect JSX DState DUpdate
 delayer put = go put
   where
     go = C.ado
-      load <- RC.button # C.rmap (const Load)
+      load <- RC.button # C.rmap (const Mealy.Load)
       txt  <- RC.text # C.lcmap mkLabel
+      dbg <- debug
       in R.div
         |< [ load |- R.text "Click Me Pls"
            , txt
+           , dbg
            ]
     mkLabel s = case s of
-      Loading -> "Loading"
-      Success r -> r
+      Mealy.Loading -> "Loading"
+      Mealy.Success r -> r
+      Mealy.Idle -> "Click the button!"
+      Mealy.Failure e -> absurd e
 
 fromEffCmp :: forall v s u. Cmp Effect v s u -> Cmp Aff v s u
 fromEffCmp = C.contraHoist launchAff_

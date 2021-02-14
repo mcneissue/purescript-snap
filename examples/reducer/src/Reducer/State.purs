@@ -2,6 +2,7 @@ module Examples.Reducer.State where
 
 import Prelude
 
+import Data.Either (Either(..))
 import Control.Monad.Cont (ContT(..))
 import Data.Either.Nested (type (\/))
 import Data.Generic.Rep (class Generic)
@@ -11,16 +12,10 @@ import Effect (Effect)
 import Effect.Aff (Milliseconds(..), delay, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Exception.Unsafe (unsafeThrow)
-import Snap.Machine.FeedbackLoop (FeedbackLoop)
-import Snap.Machine.FeedbackLoop as FeedbackLoop
+import Snap.Mealy as Mealy
 
-data DUpdate = Load | Succeed String
-data DState = Loading | Success String
-
-derive instance genericDState :: Generic DState _
-
-instance showDState :: Show DState where
-  show = genericShow
+type DUpdate = Mealy.FetchUpdate Void String
+type DState = Mealy.FetchState Void String
 
 data CounterAction
   = Increment
@@ -30,28 +25,32 @@ type Action = CounterAction \/ DUpdate
 
 type State = Int /\ DState
 
-counter :: forall m. Applicative m => FeedbackLoop Unit m Int CounterAction
-counter s = FeedbackLoop.emptyCont /\ \u -> reducer u s
+counter :: Mealy.EMachine Int CounterAction
+counter s = Mealy.emptyCont /\ \u -> reducer u s
   where
-  reducer Increment x = x + 1
-  reducer Decrement x = x - 1
+  reducer Increment x = Mealy.Yes (x + 1) Mealy.emptyCont
+  reducer Decrement x = Mealy.Yes (x - 1) Mealy.emptyCont
 
-delayer :: FeedbackLoop Unit Effect DState DUpdate
-delayer s = task /\ transition
-  where
-  task = case s of
-    Loading -> ContT \cb -> launchAff_ (delay (Milliseconds 1000.0) *> liftEffect (cb $ Succeed "Loaded a thing" ))
-    Success _ -> FeedbackLoop.emptyCont
-  transition u = case s of
-    Loading -> case u of
-      Load -> unsafeThrow "Invalid State Transition"
-      Succeed x -> Success x
-    Success _ -> case u of
-      Load -> Loading
-      Succeed _ -> unsafeThrow "Invalid State Transition"
+-- delayer :: Mealy.EMachine DState DUpdate
+-- delayer s = Mealy.emptyCont /\ transition
+--   where
+--   task = case s of
+--     Idle -> pure Load
+--     Loading -> ContT \cb -> launchAff_ (delay (Milliseconds 1000.0) *> liftEffect (cb $ Succeed "Loaded a thing" ))
+--     Success _ -> Mealy.emptyCont
+--   transition u = case s of
+--     Loading -> case u of
+--       Succeed x -> Mealy.Yes (Success x) Mealy.emptyCont
+--       _ -> Mealy.No
+--     Success _ -> case u of
+--       Load -> Mealy.Yes Loading Mealy.emptyCont
+--       _ -> Mealy.No
 
-machine :: FeedbackLoop Unit Effect State Action
-machine = FeedbackLoop.splice counter delayer
+delayer :: Mealy.EMachine (Mealy.FetchState Void String) (Mealy.FetchUpdate Void String)
+delayer = Mealy.fetch $ ContT \cb -> launchAff_ (delay (Milliseconds 1000.0) *> liftEffect (cb $ Right "Loaded a thing" ))
+
+machine :: Mealy.EMachine State Action
+machine = Mealy.esplice counter delayer
 
 initialState :: State
-initialState = 0 /\ Success "Click the button to execute an async action."
+initialState = 0 /\ Mealy.Idle
