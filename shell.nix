@@ -5,6 +5,7 @@ in
 pkgs.mkShell {
   buildInputs = with pkgs; [
     purescript
+    spago
     nodejs
     nodePackages.purescript-language-server
     fish
