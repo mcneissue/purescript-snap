@@ -26,8 +26,8 @@ type Action = CounterAction \/ DUpdate
 
 type State = Int /\ DState
 
-counter :: Mealy.EMachine Int CounterAction
-counter s = K.empty /\ \u -> reducer u s
+counter :: Mealy.EMachine Int CounterAction Unit
+counter s = Mealy.mkTransition $ \u -> reducer u s
   where
   reducer Increment x = Mealy.Yes (x + 1) K.empty
   reducer Decrement x = Mealy.Yes (x - 1) K.empty
@@ -47,11 +47,14 @@ counter s = K.empty /\ \u -> reducer u s
 --       Load -> Mealy.Yes Loading Mealy.emptyCont
 --       _ -> Mealy.No
 
-delayer :: Mealy.EMachine (Mealy.FetchState Void String) (Mealy.FetchUpdate Void String)
+delayer :: Mealy.EMachine (Mealy.FetchState Void String) (Mealy.FetchUpdate Void String) Unit
 delayer = Mealy.fetchMachine $ \cb -> launchAff_ (delay (Milliseconds 1000.0) *> liftEffect (cb $ Right "Loaded a thing" ))
 
-machine :: Mealy.EMachine State Action
-machine = Mealy.esplice counter delayer
+machine :: Mealy.EMachine State Action Unit
+machine = Mealy.mapV (const unit) $ Mealy.esplice counter delayer
 
 initialState :: State
 initialState = 0 /\ Mealy.Idle
+
+initialInputs :: Array Action
+initialInputs = [ Right Mealy.Load, Left Increment ]

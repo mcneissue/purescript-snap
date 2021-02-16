@@ -9,5 +9,4 @@ import Snap.Mealy as Mealy
 
 main :: Effect Unit
 main = do
-  Mealy.scratch
-  -- Mealy.simpleMain "container" State.machine UI.component State.initialState
+  Mealy.simpleMain "container" State.machine UI.component State.initialState State.initialInputs
