@@ -8,4 +8,6 @@ import Examples.Reducer.UI as UI
 import Snap.Mealy as Mealy
 
 main :: Effect Unit
-main = Mealy.simpleMain "container" State.machine UI.component State.initialState
+main = do
+  Mealy.scratch
+  -- Mealy.simpleMain "container" State.machine UI.component State.initialState

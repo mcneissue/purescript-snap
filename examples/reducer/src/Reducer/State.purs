@@ -13,6 +13,7 @@ import Effect.Aff (Milliseconds(..), delay, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Exception.Unsafe (unsafeThrow)
 import Snap.Mealy as Mealy
+import Control.K as K
 
 type DUpdate = Mealy.FetchUpdate Void String
 type DState = Mealy.FetchState Void String
@@ -26,10 +27,10 @@ type Action = CounterAction \/ DUpdate
 type State = Int /\ DState
 
 counter :: Mealy.EMachine Int CounterAction
-counter s = Mealy.emptyCont /\ \u -> reducer u s
+counter s = K.empty /\ \u -> reducer u s
   where
-  reducer Increment x = Mealy.Yes (x + 1) Mealy.emptyCont
-  reducer Decrement x = Mealy.Yes (x - 1) Mealy.emptyCont
+  reducer Increment x = Mealy.Yes (x + 1) K.empty
+  reducer Decrement x = Mealy.Yes (x - 1) K.empty
 
 -- delayer :: Mealy.EMachine DState DUpdate
 -- delayer s = Mealy.emptyCont /\ transition
@@ -47,7 +48,7 @@ counter s = Mealy.emptyCont /\ \u -> reducer u s
 --       _ -> Mealy.No
 
 delayer :: Mealy.EMachine (Mealy.FetchState Void String) (Mealy.FetchUpdate Void String)
-delayer = Mealy.fetch $ ContT \cb -> launchAff_ (delay (Milliseconds 1000.0) *> liftEffect (cb $ Right "Loaded a thing" ))
+delayer = Mealy.fetchMachine $ \cb -> launchAff_ (delay (Milliseconds 1000.0) *> liftEffect (cb $ Right "Loaded a thing" ))
 
 machine :: Mealy.EMachine State Action
 machine = Mealy.esplice counter delayer
