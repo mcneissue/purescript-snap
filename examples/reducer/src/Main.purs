@@ -5,8 +5,7 @@ import Prelude
 import Effect (Effect)
 import Examples.Reducer.State as State
 import Examples.Reducer.UI as UI
-import Snap.Mealy as Mealy
+import Snap (simpleMain)
 
 main :: Effect Unit
-main = do
-  Mealy.simpleMain "container" State.machine UI.component State.initialState State.initialInputs
+main = simpleMain "container" State.machine UI.component State.initialState State.initialInputs

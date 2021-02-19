@@ -1,6 +1,7 @@
 module Control.K where
 
 import Prelude hiding (map, bind, join)
+import Effect (Effect)
 import Data.Tuple (fst, snd)
 import Data.Either (Either(..), either)
 import Data.Tuple.Nested (type (/\), (/\))
@@ -8,6 +9,9 @@ import Data.Either.Nested (type (\/))
 
 type K i o x = (x -> i) -> o
 type K' r x = K r r x
+
+type MK m v = K (m Unit) (m Unit) v
+type EK v = MK Effect v
 
 map :: ∀ i o a b. (a -> b) -> K i o a -> K i o b
 map f k cb = k $ cb <<< f

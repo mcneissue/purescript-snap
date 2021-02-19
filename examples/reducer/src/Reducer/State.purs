@@ -7,11 +7,12 @@ import Data.Either.Nested (type (\/))
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect.Aff (Milliseconds(..), delay, launchAff_)
 import Effect.Class (liftEffect)
-import Snap.Mealy as Mealy
+import Snap.Machine as Machine
+import Snap.Machine.Fetch as Fetch
 import Control.K as K
 
-type DUpdate = Mealy.FetchUpdate Void String
-type DState = Mealy.FetchState Void String
+type DUpdate = Fetch.FetchUpdate Void String
+type DState = Fetch.FetchState Void String
 
 data CounterAction
   = Increment
@@ -21,20 +22,20 @@ type Action = CounterAction \/ DUpdate
 
 type State = Int /\ DState
 
-counter :: Mealy.EMachine Int CounterAction
+counter :: Machine.EMachine Int CounterAction
 counter s u = reducer u s
   where
-  reducer Increment x = Mealy.Yes (x + 1) K.empty
-  reducer Decrement x = Mealy.Yes (x - 1) K.empty
+  reducer Increment x = Machine.Yes (x + 1) K.empty
+  reducer Decrement x = Machine.Yes (x - 1) K.empty
 
-delayer :: Mealy.EMachine (Mealy.FetchState Void String) (Mealy.FetchUpdate Void String)
-delayer = Mealy.fetchMachine $ \cb -> launchAff_ (delay (Milliseconds 1000.0) *> liftEffect (cb $ Right "Loaded a thing" ))
+delayer :: Machine.EMachine (Fetch.FetchState Void String) (Fetch.FetchUpdate Void String)
+delayer = Fetch.fetchMachine $ \cb -> launchAff_ (delay (Milliseconds 1000.0) *> liftEffect (cb $ Right "Loaded a thing" ))
 
-machine :: Mealy.EMachine State Action
-machine = Mealy.esplice counter delayer
+machine :: Machine.EMachine State Action
+machine = Machine.esplice counter delayer
 
 initialState :: State
-initialState = 0 /\ Mealy.Idle
+initialState = 0 /\ Fetch.Idle
 
 initialInputs :: Array Action
-initialInputs = [ Right Mealy.Load, Left Increment ]
+initialInputs = [ Right Fetch.Load, Left Increment ]

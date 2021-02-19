@@ -2,18 +2,15 @@ module Snap.Machine.Step where
 
 import Prelude
 
-import Data.Tuple.Nested (type (/\), (/\))
+data Transition s e = Yes s e | No
 
-type Step i o s = o /\ (i -> s)
+instance functorTransition :: Functor (Transition s) where
+  map f No = No
+  map f (Yes s e) = Yes s $ f e
 
-mapO :: ∀ a b i s. (a -> b) -> Step i a s -> Step i b s
-mapO f (o /\ t) = f o /\ t
+foldTransition :: forall s e r. (s -> e -> r) -> r -> Transition s e -> r
+foldTransition yes no = case _ of
+  No -> no
+  Yes s e -> yes s e
 
-mapI :: ∀ a b o s. (a -> b) -> Step b o s -> Step a o s
-mapI f (o /\ t) = o /\ t <<< f
-
-mapS :: ∀ a b i o. (a -> b) -> Step i o a -> Step i o b
-mapS f (o /\ t) = o /\ f <<< t
-
-dimapIO :: ∀ s i o i' o'. (i' -> i) -> (o -> o') -> Step i o s -> Step i' o' s
-dimapIO f g (o /\ t) = g o /\ t <<< f
+type Step s i e = i -> Transition s e

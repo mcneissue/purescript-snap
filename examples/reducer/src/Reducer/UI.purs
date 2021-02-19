@@ -5,15 +5,14 @@ import Prelude
 import Data.Either (Either(..))
 import Data.Tuple (fst, snd)
 import Effect (Effect)
-import Effect.Aff (Aff, launchAff_)
-import Examples.Reducer.State (Action, CounterAction(..), DState(..), DUpdate(..), State)
+import Examples.Reducer.State (Action, CounterAction(..), DState, DUpdate, State)
 import React.Basic (JSX)
 import React.Basic.DOM as R
 import Snap.Component.SYTC (Cmp)
 import Snap.Component.SYTC as C
 import Snap.React.Component (debug, (|-), (|<))
 import Snap.React.Component as RC
-import Snap.Mealy as Mealy
+import Snap.Machine.Fetch as Fetch
 
 component :: Cmp Effect JSX State Action
 component = C.ado
@@ -37,7 +36,7 @@ delayer :: Cmp Effect JSX DState DUpdate
 delayer put = go put
   where
     go = C.ado
-      load <- RC.button # C.rmap (const Mealy.Load)
+      load <- RC.button # C.rmap (const Fetch.Load)
       txt  <- RC.text # C.lcmap mkLabel
       dbg <- debug
       in R.div
@@ -46,10 +45,7 @@ delayer put = go put
            , dbg
            ]
     mkLabel s = case s of
-      Mealy.Loading -> "Loading"
-      Mealy.Success r -> r
-      Mealy.Idle -> "Click the button!"
-      Mealy.Failure e -> absurd e
-
-fromEffCmp :: forall v s u. Cmp Effect v s u -> Cmp Aff v s u
-fromEffCmp = C.contraHoist launchAff_
+      Fetch.Loading -> "Loading"
+      Fetch.Success r -> r
+      Fetch.Idle -> "Click the button!"
+      Fetch.Failure e -> absurd e
