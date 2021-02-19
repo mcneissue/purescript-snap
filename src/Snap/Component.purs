@@ -4,11 +4,12 @@ import Prelude
 
 import Data.Either (Either)
 import Data.Newtype (class Newtype, un, under)
-import Data.Profunctor (class Profunctor)
+import Data.Profunctor (class Profunctor, dimap)
 import Data.Profunctor.Choice (class Choice)
 import Data.Profunctor.Lazy (class Lazy)
 import Data.Profunctor.Monoidal (class Monoidal, class Semigroupal, class Unital)
 import Data.Profunctor.Strong (class Strong)
+import Data.Profunctor.Traverse (class BiInvariant)
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
 import Snap.Component.SYTC (Cmp)
@@ -85,6 +86,9 @@ instance tetUnital :: Monoid v => Unital (->) Unit Void Unit (PComponent m v) wh
     actual = C.poly
 
 instance tetMonoidal :: Monoid v => Monoidal (->) Tuple Unit Either Void Tuple Unit (PComponent m v)
+
+instance biinvariantComponent :: BiInvariant (PComponent m v) where
+  biinvmap _ f g _ = dimap f g
 
 focus :: forall m v s u x y. Newtype x y => (PComponent m v s u -> x) -> Cmp m v s u -> y
 focus = under ρ

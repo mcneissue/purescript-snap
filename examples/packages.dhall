@@ -107,7 +107,6 @@ let additions =
   }
 -------------------------------
 -}
-
 let mkPackage =
       https://raw.githubusercontent.com/purescript/package-sets/psc-0.13.0-20190626/src/mkPackage.dhall sha256:0b197efa1d397ace6eb46b243ff2d73a3da5638d8d0ac8473e8e4a8fc528cf57
 
@@ -133,21 +132,21 @@ let additions =
                 "v0.1.0"
       , profunctor-traverse =
           let manifest =
-                https://raw.githubusercontent.com/mcneissue/purescript-profunctor-traverse/v0.1.0/spago.dhall sha256:7136013475629bdb7a1e260a218eee5ed51b3cbb79d3ee82ef82db57a2f42a1b
+                https://raw.githubusercontent.com/mcneissue/purescript-profunctor-traverse/v0.2.0/spago.dhall sha256:6ee5e9e9acfb26a78b35aa33aa3a93537e90b0af2f88b7ba2db6157b7e7220a1
 
           in  mkPackage
                 manifest.dependencies
                 "https://github.com/mcneissue/purescript-profunctor-traverse.git"
-                "v0.1.0"
+                "v0.2.0"
       , profunctor-extra =
           let manifest =
-                https://raw.githubusercontent.com/mcneissue/purescript-profunctor-extra/v0.1.0/spago.dhall sha256:9052f2ac1e76d2d564da57333276ad2d7e83c8ff0b21d94dbebacfe5dce42489
+                https://raw.githubusercontent.com/mcneissue/purescript-profunctor-extra/v0.2.0/spago.dhall sha256:9052f2ac1e76d2d564da57333276ad2d7e83c8ff0b21d94dbebacfe5dce42489
 
           in  mkPackage
                 manifest.dependencies
                 "https://github.com/mcneissue/purescript-profunctor-extra.git"
-                "v0.1.0"
+                "v0.2.0"
       }
 
-in (upstream // overrides // additions)
+in  (upstream // overrides // additions)
   with snap = ../spago.dhall as Location

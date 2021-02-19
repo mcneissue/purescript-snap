@@ -1,35 +1,24 @@
-module Snap.Machine (module Step, module Snap.Machine) where
+module Snap.Machine (module Step, module SYTC, module Snap.Machine) where
 
 import Prelude
 
-import Data.Tuple.Nested (type (/\), (/\))
-import Data.Either.Nested (type (\/))
-import Data.Either (either, Either(..))
-import Control.K as K
-import Data.Profunctor (lcmap)
-import Snap.Machine.Step (Step, Transition(..))
+import Data.Either (Either)
+import Data.Profunctor.Monoidal (class Semigroupal, class Unital, class Monoidal)
+import Data.Profunctor.Traverse (class BiInvariant)
+import Data.Tuple (Tuple)
+import Data.Tuple.Nested ((/\))
+import Snap.Machine.SYTC as SYTC
 import Snap.Machine.Step as Step
 
-type Machine s i e = s -> Step s i e
+newtype Machine e s i = Machine (SYTC.Machine s i e)
 
--- Effectful machines
-type EMachine s i = Machine s i (K.EK i)
+instance biinvariantMachine :: BiInvariant (Machine e) where
+  biinvmap f g _ h (Machine m) = Machine $ SYTC.mapS f g $ SYTC.mapI h $ m
 
-type MMachine m s i = Machine s i (m i)
+instance tetSemigroupalMachine :: Semigroupal (->) Tuple Either Tuple (Machine e) where
+  pzip (Machine m1 /\ Machine m2) = Machine $ SYTC.splice m1 m2
 
-mapI :: ∀ s i i' e. (i' -> i) -> Machine s i e -> Machine s i' e
-mapI = map <<< lcmap
+instance tetUnitalMachine :: Unital (->) Unit Void Unit (Machine e) where
+  punit = const $ Machine SYTC.unit
 
-mapE :: ∀ s i e e'. (e -> e') -> Machine s i e -> Machine s i e'
-mapE = map <<< map <<< map
-
-splice :: forall s1 s2 i1 i2 e1 e2.
-  Machine s1 i1 e1 -> Machine s2 i2 e2 -> Machine (s1 /\ s2) (i1 \/ i2) (e1 \/ e2)
-splice m1 m2 (s1 /\ s2) = case m1 s1 /\ m2 s2 of
-  step1 /\ step2 -> either
-    (Step.foldTransition (\s1' e1 -> Yes (s1' /\ s2 ) $ Left  e1) No <<< step1)
-    (Step.foldTransition (\s2' e2 -> Yes (s1  /\ s2') $ Right e2) No <<< step2)
-
-esplice :: forall s1 s2 i1 i2.
-  EMachine s1 i1 -> EMachine s2 i2 -> EMachine (s1 /\ s2) (i1 \/ i2)
-esplice m1 m2 = mapE K.diverge $ splice m1 m2
+instance tetMonoidalMachine :: Monoidal (->) Tuple Unit Either Void Tuple Unit (Machine e)
