@@ -2,7 +2,8 @@ module Snap where
 
 import Prelude
 
-import Snap.Machine (Machine, EMachine)
+import Snap.Machine (EMachine)
+import Snap.Machine.SYTC (Machine)
 import Snap.Machine.Step (Transition(..))
 import Control.K as K
 import Data.Foldable (traverse_)
