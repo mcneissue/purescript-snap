@@ -4,24 +4,16 @@ import Prelude
 
 import Control.K (K)
 import Control.K as K
-
 import Data.Either (either, Either(..))
 import Data.Either.Nested (type (\/))
 import Data.Foldable (traverse_)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Lens (Lens, over)
-import Data.Lens.Record (prop)
 import Data.Maybe (maybe)
 import Data.Profunctor (lcmap)
-import Data.Symbol (SProxy(..))
-import Data.Time.Duration (Milliseconds(..))
-import Data.Tuple (fst)
 import Data.Tuple.Nested (type (/\), (/\))
 import Effect (Effect)
-import Effect.Aff (delay, launchAff_)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Class.Console (log)
 import Effect.Exception (throw)
 import Effect.Ref as Ref
 import React.Basic (JSX)
@@ -31,7 +23,7 @@ import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (toNonElementParentNode)
-import Web.HTML.Window (document, prompt)
+import Web.HTML.Window (document)
 
 -- {{{ Continuation monad stuff
 
@@ -53,101 +45,68 @@ foldTransition yes no = case _ of
   No -> no
   Yes s e -> yes s e
 
-type Step s i v e = { vertex :: v, transition :: i -> Transition s e }
-
-_transition :: forall a b r. Lens { transition :: a | r } { transition :: b | r } a b
-_transition = prop (SProxy :: SProxy "transition")
-
-_vertex :: forall a b r. Lens { vertex :: a | r } { vertex :: b | r } a b
-_vertex = prop (SProxy :: SProxy "vertex")
-
-mkTransition :: forall s i e.
-  (i -> Transition s e) ->
-  Step s i Unit e
-mkTransition f = { vertex: unit, transition: f }
+type Step s i e = i -> Transition s e
 
 -- }}}
 
 -- {{{ Machines
 
 -- A coalgebra (wow, such math)
-type Machine s i v e = s -> Step s i v e
+type Machine s i e = s -> Step s i e
 
 -- Greatest fixpoint of coalgebra
-newtype Behavior i v e = Behavior (Step (Behavior i v e) i v e)
+newtype Behavior i e = Behavior (Step (Behavior i e) i e)
 
-newtype EBehavior i v e = EBehavior (Step (Effect (EBehavior i v e)) i v e)
+newtype EBehavior i e = EBehavior (Step (Effect (EBehavior i e)) i e)
 
 -- Effectful machines
-type EMachine s i v = Machine s i v (ECont i)
+type EMachine s i = Machine s i (ECont i)
 
-type MMachine m s i v = Machine s i v (m i)
+type MMachine m s i = Machine s i (m i)
 
-mapI :: ∀ s i i' v e. (i' -> i) -> Machine s i v e -> Machine s i' v e
-mapI = map <<< over (_transition <<< lcmap)
+mapI :: ∀ s i i' e. (i' -> i) -> Machine s i e -> Machine s i' e
+mapI = map <<< lcmap
 
-mapV :: ∀ s i v v' e. (v -> v') -> Machine s i v e -> Machine s i v' e
-mapV = map <<< over _vertex
-
-mapE :: ∀ s i v e e'. (e -> e') -> Machine s i v e -> Machine s i v e'
-mapE = map <<< over (_transition <<< map <<< map)
-
-reportState :: ∀ s i v e.
-  Machine s i v e -> Machine s i (s /\ v) e
-reportState m s = mapV (s /\ _) m s
-
-applyComponent :: forall m s i v e.
-  Cmp m v s i ->
-  Machine s i Unit e ->
-  Machine s i (K (m Unit) v i) e
-applyComponent cmp = reportState >>> mapV (fst >>> flip cmp)
+mapE :: ∀ s i e e'. (e -> e') -> Machine s i e -> Machine s i e'
+mapE = map <<< map <<< map
 
 -- What to call this??
 runVDomMachine :: forall m s i v.
   MonadEffect m =>
-  Machine s i (K (m Unit) v i) (MCont m i) ->
+  Cmp m v s i ->
+  Machine s i (MCont m i) ->
   s -> Array i -> MCont m v
-runVDomMachine machine init prime render = do
+runVDomMachine cmp machine init prime render = do
   ref <- liftEffect $ Ref.new init
-  let { vertex } = machine init
-  render $ vertex $ handleUpdate ref
+  let vdom = cmp (handleUpdate ref) init
+  render $ vdom
   traverse_ (handleUpdate ref) prime
   pure unit
   where
   handleUpdate ref i = do
     s <- liftEffect $ Ref.read ref
-    let { transition } = machine s
+    let transition = machine s
     case transition i of
       No -> liftEffect $ throw "Invalid transition"
       Yes s' effect -> do
         liftEffect $ Ref.write s' ref
-        let { vertex } = machine s'
-        render $ vertex $ handleUpdate ref
+        let vdom = cmp (handleUpdate ref) s'
+        render vdom
         effect $ handleUpdate ref
 
-runCmpWithMachine :: forall m s i v.
-  MonadEffect m =>
-  Cmp m v s i ->
-  Machine s i Unit (MCont m i) ->
-  s -> Array i -> MCont m v
-runCmpWithMachine cmp = runVDomMachine <<< applyComponent cmp
-
-splice :: forall s1 s2 i1 i2 v1 v2 e1 e2.
-  Machine s1 i1 v1 e1 -> Machine s2 i2 v2 e2 -> Machine (s1 /\ s2) (i1 \/ i2) (v1 /\ v2) (e1 \/ e2)
+splice :: forall s1 s2 i1 i2 e1 e2.
+  Machine s1 i1 e1 -> Machine s2 i2 e2 -> Machine (s1 /\ s2) (i1 \/ i2) (e1 \/ e2)
 splice m1 m2 (s1 /\ s2) = case m1 s1 /\ m2 s2 of
-  step1 /\ step2 ->
-    { vertex: step1.vertex /\ step2.vertex
-    , transition: either
-        (foldTransition (\s1' e1 -> Yes (s1' /\ s2 ) $ Left  e1) No <<< step1.transition)
-        (foldTransition (\s2' e2 -> Yes (s1  /\ s2') $ Right e2) No <<< step2.transition)
-   }
+  step1 /\ step2 -> either
+    (foldTransition (\s1' e1 -> Yes (s1' /\ s2 ) $ Left  e1) No <<< step1)
+    (foldTransition (\s2' e2 -> Yes (s1  /\ s2') $ Right e2) No <<< step2)
 
 par :: ∀ v1 v2.
   ECont v1 /\ ECont v2 -> ECont (v1 \/ v2)
 par (k1 /\ k2) cb = k1 (cb <<< Left) *> k2 (cb <<< Right)
 
-esplice :: forall s1 s2 i1 i2 v1 v2.
-  EMachine s1 i1 v1 -> EMachine s2 i2 v2 -> EMachine (s1 /\ s2) (i1 \/ i2) (v1 /\ v2)
+esplice :: forall s1 s2 i1 i2.
+  EMachine s1 i1 -> EMachine s2 i2 -> EMachine (s1 /\ s2) (i1 \/ i2)
 esplice m1 m2 = mapE K.diverge $ splice m1 m2
 
 -- {{{ Fetch machine
@@ -168,19 +127,19 @@ instance showFetchUpdate :: (Show e, Show r) => Show (FetchUpdate e r) where
 
 fetchMachine :: forall e r.
   ECont (e \/ r) ->
-  EMachine (FetchState e r) (FetchUpdate e r) Unit
+  EMachine (FetchState e r) (FetchUpdate e r)
 fetchMachine fetch = case _ of
-  Idle -> mkTransition $ case _ of
+  Idle -> case _ of
     Load -> loading
     _ -> No
-  Loading -> mkTransition $ case _ of
+  Loading -> case _ of
     Succeed url -> Yes (Success url) K.empty
     Fail error -> Yes (Failure error) K.empty
     _ -> No
-  Success url -> mkTransition $ case _ of
+  Success url -> case _ of
     Load -> loading
     _ -> No
-  Failure error -> mkTransition $ case _ of
+  Failure error -> case _ of
     Load -> loading
     _ -> No
   where
@@ -196,36 +155,8 @@ element id = do
   mc <- window >>= document <#> toNonElementParentNode >>= getElementById id
   maybe (throw "Couldn't find root element") pure mc
 
-simpleMain :: ∀ s i. String -> EMachine s i Unit -> Cmp Effect JSX s i -> s -> Array i -> Effect Unit
+simpleMain :: ∀ s i. String -> EMachine s i -> Cmp Effect JSX s i -> s -> Array i -> Effect Unit
 simpleMain id machine cmp s i = do
   elem <- element id
-  runReact elem $ runCmpWithMachine cmp machine s i
+  runReact elem $ runVDomMachine cmp machine s i
 
-scratch :: Effect Unit
-scratch = do
-  let
-    fm d msg = fetchMachine $ \cb -> launchAff_ (delay (Milliseconds d) *> liftEffect (cb $ (Right msg :: Either Void String)))
-    m = reportState $ fm 5000.0 "machine 1" `esplice` fm 1000.0 "machine 2"
-  ref <- Ref.new $  Idle /\ Idle
-  handleUpdate ref m $ Left Load
-  handleUpdate ref m $ Right Load
-
-  where
-  handleUpdate ref m u = do
-    log $ "Transition occurred: " <> show u
-    s <- Ref.read ref
-
-    log $ "Current state: " <> show s
-
-    let step = m s
-    case step.transition u of
-      No -> log "Produced NO"
-      Yes s' effect -> do
-        w <- window
-        _ <- prompt "Valid transition occured. Press OK to continue" w
-
-        log $ "Writing new state: " <> show s'
-        Ref.write s' ref
-
-        log $ "Running transition effects from previous state"
-        effect $ handleUpdate ref m
