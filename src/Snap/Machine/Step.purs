@@ -2,7 +2,7 @@ module Snap.Machine.Step where
 
 import Prelude
 
-import Data.Bifunctor (class Bifunctor)
+import Data.Bifunctor (class Bifunctor, lmap)
 
 data Transition s e = Yes s e | No
 
@@ -20,3 +20,6 @@ foldTransition yes no = case _ of
   Yes s e -> yes s e
 
 type Step s i e = i -> Transition s e
+
+mapS :: forall s s' i e. (s -> s') -> Step s i e -> Step s' i e
+mapS f s i = lmap f $ s i

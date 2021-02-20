@@ -15,6 +15,7 @@ import Effect.Class (liftEffect)
 import Snap.Machine (Machine(..))
 import Snap.Machine as Machine
 import Snap.Machine.Fetch as Fetch
+import Snap.Machine.Step (Transition(..))
 
 type DUpdate = Fetch.FetchUpdate Void String
 type DState = Fetch.FetchState Void String
@@ -30,8 +31,8 @@ type State = { counter :: Int, delayer :: DState }
 counter :: Machine.EMachine Int CounterAction
 counter s u = reducer u s
   where
-  reducer Increment x = Machine.Yes (x + 1) K.empty
-  reducer Decrement x = Machine.Yes (x - 1) K.empty
+  reducer Increment x = Yes (x + 1) K.empty
+  reducer Decrement x = Yes (x - 1) K.empty
 
 delayer :: Machine.EMachine (Fetch.FetchState Void String) (Fetch.FetchUpdate Void String)
 delayer = Fetch.fetchMachine $ \cb -> launchAff_ (delay (Milliseconds 1000.0) *> liftEffect (cb $ Right "Loaded a thing" ))
