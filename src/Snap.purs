@@ -14,10 +14,9 @@ import React.Basic (JSX)
 import React.Basic.DOM as React
 import Snap.Component.SYTC (Cmp)
 import Snap.Machine (EMachine)
-import Snap.Machine.SYTC (Machine)
-import Snap.Machine.SYTC as Machine
 import Snap.Machine.SYTC (Behavior)
-import Snap.Machine.Step (Transition(..))
+import Snap.Machine.SYTC as Machine
+import Snap.Machine.Transition (Transition(..))
 import Web.DOM (Element)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)

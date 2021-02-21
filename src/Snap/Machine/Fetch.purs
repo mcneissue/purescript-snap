@@ -8,7 +8,7 @@ import Data.Either.Nested (type (\/))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Snap.Machine (EMachine)
-import Snap.Machine.Step (Transition(..))
+import Snap.Machine.Transition (Transition(..))
 
 data FetchState e r = Idle | Loading | Success r | Failure e
 

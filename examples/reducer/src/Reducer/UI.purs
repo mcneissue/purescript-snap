@@ -2,9 +2,7 @@ module Examples.Reducer.UI where
 
 import Prelude
 
-import Data.Either (Either(..))
 import Data.Symbol (SProxy(..))
-import Data.Tuple (fst, snd)
 import Data.Variant (inj)
 import Effect (Effect)
 import Examples.Reducer.State (Action, CounterAction(..), DState, DUpdate, State)

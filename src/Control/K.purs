@@ -33,8 +33,8 @@ pure x f = f x
 join :: ∀ a b c x. K b c (K a b x) -> K a c x
 join k cb = k $ \f -> f cb
 
-bind :: ∀ a b c xa xb. (xa -> K a b xb) -> K b c xa -> K a c xb
-bind amb = join <<< map amb
+bind :: ∀ a b c xa xb. K b c xa -> (xa -> K a b xb) -> K a c xb
+bind ma amb = join $ map amb ma
 
 -- Sort of represents running two continuations in parallel
 parallel :: ∀ i1 o1 x1 i2 o2 x2.

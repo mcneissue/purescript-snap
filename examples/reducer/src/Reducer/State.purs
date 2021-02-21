@@ -5,17 +5,14 @@ import Prelude
 import Control.K as K
 import Control.Monad.Cont (ContT(..), runContT)
 import Data.Either (Either(..))
-import Data.Either.Nested (type (\/))
 import Data.Newtype (unwrap)
-import Data.Profunctor.Traverse (sequenceSplice, sequenceSwitch)
-import Data.Tuple.Nested (type (/\), (/\))
+import Data.Profunctor.Traverse (sequenceSwitch)
 import Data.Variant (SProxy(..), Variant, inj)
 import Effect.Aff (Milliseconds(..), delay, launchAff_)
 import Effect.Class (liftEffect)
-import Snap.Machine (Machine(..))
 import Snap.Machine as Machine
 import Snap.Machine.Fetch as Fetch
-import Snap.Machine.Step (Transition(..))
+import Snap.Machine.Transition (Transition(..))
 
 type DUpdate = Fetch.FetchUpdate Void String
 type DState = Fetch.FetchState Void String
