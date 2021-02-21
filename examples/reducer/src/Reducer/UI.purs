@@ -2,24 +2,21 @@ module Examples.Reducer.UI where
 
 import Prelude
 
-import Data.Symbol (SProxy(..))
-import Data.Variant (inj)
+import Data.Newtype (unwrap)
+import Data.Profunctor.Traverse (sequenceSwitch)
 import Effect (Effect)
 import Examples.Reducer.State (Action, CounterAction(..), DState, DUpdate, State)
 import React.Basic (JSX)
 import React.Basic.DOM as R
 import Snap.Component.SYTC (Cmp)
 import Snap.Component.SYTC as C
+import Snap.Component (ρ)
 import Snap.Machine.Fetch as Fetch
 import Snap.React.Component (debug, (|-), (|<))
 import Snap.React.Component as RC
 
 component :: Cmp Effect JSX State Action
-component = C.ado
-  cntr <- counter # C.dimap _.counter (inj (SProxy :: _ "counter"))
-  dlyr <- delayer # C.dimap _.delayer (inj (SProxy :: _ "delayer"))
-  dbg <- debug
-  in R.div |< [ cntr, dlyr, dbg ]
+component = unwrap $ sequenceSwitch { counter: ρ counter, delayer: ρ delayer }
 
 counter :: Cmp Effect JSX Int CounterAction
 counter = C.ado
