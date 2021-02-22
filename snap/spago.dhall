@@ -31,5 +31,5 @@ You can edit this file as you like.
   , "simple-json"
   , "kishimen"
   ]
-, packages = ./examples/packages.dhall
+, packages = ../packages.dhall
 }

@@ -3,7 +3,7 @@ module Examples.Reducer.UI where
 import Prelude
 
 import Data.Newtype (unwrap)
-import Data.Profunctor.Traverse (sequenceSwitch)
+import Data.Bifunctor.Traverse (sequence')
 import Effect (Effect)
 import Examples.Reducer.State (Action, CounterAction(..), DState, DUpdate, State)
 import React.Basic (JSX)
@@ -16,7 +16,7 @@ import Snap.React.Component (debug, (|-), (|<))
 import Snap.React.Component as RC
 
 component :: Cmp Effect JSX State Action
-component = unwrap $ sequenceSwitch { counter: ρ counter, delayer: ρ delayer }
+component = unwrap $ sequence' { counter: ρ counter, delayer: ρ delayer }
 
 counter :: Cmp Effect JSX Int CounterAction
 counter = C.ado

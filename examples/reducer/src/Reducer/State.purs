@@ -6,7 +6,7 @@ import Control.K as K
 import Control.Monad.Cont (ContT(..), runContT)
 import Data.Either (Either(..))
 import Data.Newtype (unwrap)
-import Data.Profunctor.Traverse (sequenceSwitch)
+import Data.Bifunctor.Traverse (sequence')
 import Data.Variant (SProxy(..), Variant, inj)
 import Effect.Aff (Milliseconds(..), delay, launchAff_)
 import Effect.Class (liftEffect)
@@ -35,7 +35,7 @@ delayer :: Machine.EMachine (Fetch.FetchState Void String) (Fetch.FetchUpdate Vo
 delayer = Fetch.fetchMachine $ \cb -> launchAff_ (delay (Milliseconds 1000.0) *> liftEffect (cb $ Right "Loaded a thing" ))
 
 machine :: Machine.EMachine State Action
-machine = Machine.mapE runContT $ unwrap $ sequenceSwitch
+machine = Machine.mapE runContT $ unwrap $ sequence'
  { counter: Machine.Feedback $ Machine.mapE ContT counter
  , delayer: Machine.Feedback $ Machine.mapE ContT delayer
  }

@@ -2,14 +2,15 @@ module Snap.Component where
 
 import Prelude
 
+import Data.Bifunctor.Invariant (class Invariant) as F2
+import Data.Bifunctor.Lazy (class Lazy)
+import Data.Bifunctor.Monoidal (class Monoidal, class Semigroupal, class Unital)
 import Data.Either (Either)
-import Data.Newtype (class Newtype, un, under)
+import Data.Newtype (class Newtype, un, under, unwrap)
 import Data.Profunctor (class Profunctor, dimap)
 import Data.Profunctor.Choice (class Choice)
-import Data.Profunctor.Lazy (class Lazy)
-import Data.Profunctor.Monoidal (class Monoidal, class Semigroupal, class Unital)
 import Data.Profunctor.Strong (class Strong)
-import Data.Profunctor.Traverse (class BiInvariant)
+import Data.Trifunctor.Invariant (class Invariant) as F3
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
 import Snap.Component.SYTC (Cmp)
@@ -64,31 +65,34 @@ instance choiceComponent :: Monoid v => Choice (PComponent m v) where
     actual = C.right
 
 instance eetSemigroupal :: Semigroupal (->) Either Either Tuple (PComponent m v) where
-  pzip (f /\ g) = ρ $ actual (un ρ f) (un ρ g)
+  combine (f /\ g) = ρ $ actual (un ρ f) (un ρ g)
     where
     actual = C.demux
 
 instance eetUnital :: Unital (->) Void Void Unit (PComponent m v) where
-  punit _ = ρ actual
+  introduce _ = ρ actual
     where
     actual = C.initial
 
 instance eetMonoidal :: Monoidal (->) Either Void Either Void Tuple Unit (PComponent m v)
 
 instance tetSemigroupal :: Semigroup v => Semigroupal (->) Tuple Either Tuple (PComponent m v) where
-  pzip (f /\ g) = ρ $ actual (un ρ f) (un ρ g)
+  combine (f /\ g) = ρ $ actual (un ρ f) (un ρ g)
     where
     actual = C.switch
 
 instance tetUnital :: Monoid v => Unital (->) Unit Void Unit (PComponent m v) where
-  punit _ = ρ actual
+  introduce _ = ρ actual
     where
     actual = C.poly
 
 instance tetMonoidal :: Monoid v => Monoidal (->) Tuple Unit Either Void Tuple Unit (PComponent m v)
 
-instance biinvariantComponent :: BiInvariant (PComponent m v) where
-  biinvmap _ f g _ = dimap f g
+instance invariant2Component :: F2.Invariant (PComponent m v) where
+  invmap _ f g _ = dimap f g
+
+instance invariant3Component :: F3.Invariant (PComponent m) where
+  invmap f _ _ g h _ = ρ <<< C.map f <<< unwrap <<< dimap g h
 
 focus :: forall m v s u x y. Newtype x y => (PComponent m v s u -> x) -> Cmp m v s u -> y
 focus = under ρ
